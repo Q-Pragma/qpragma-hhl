@@ -14,7 +14,9 @@ using map_idmean = std::unordered_map<uint64_t, bool>;
 
 const uint64_t NB_SHOTS = 1000UL;
 const double EPS = 1e-3;
-const double NMAX = 100000;                                                                                                                                                                
+const double NMAX = 100000;
+
+
 #pragma quantum routine (std::array<double, 2UL> coeffs)
 void state_prep(const qbool & q) {
     // Prepare the superposition of coeffs a and b in qreg
@@ -25,9 +27,11 @@ void state_prep(const qbool & q) {
 
 #pragma quantum routine (uint64_t n, std::array<double, 4UL> coeffs)
 void UA(const qbool & breg) {
-    // Special cases : already a Pauli                                                                                                                                                         // Pauli X
-    if (coeffs[0] == 1.) {                                                                                                                                                                         if (n == 0) {X(breg);}
-        return;                                                                                                                                                                                }
+    // Special cases : already a Pauli
+    // Pauli X
+    if (coeffs[0] == 1.) {if (n == 0) {X(breg);}
+        return;
+    }
     // Pauli Y
     else if (coeffs[1] == 1.) {
         if (n == 0) {Y(breg);}
@@ -47,15 +51,18 @@ void UA(const qbool & breg) {
     // The operator UA can be decomposed using rotations
     // UA = e^(i alpha) RZ(theta2) RY(theta1) RZ(theta0)
     std::complex<double> U[2][2] = {
-        {coeffs[2] + coeffs[3], coeffs[0] + 1i * coeffs[1]},                                                                                                                                       {coeffs[0] + 1i * coeffs[1], coeffs[3] - coeffs[2]}
+        {coeffs[2] + coeffs[3], coeffs[0] + 1i * coeffs[1]},
+        {coeffs[0] + 1i * coeffs[1], coeffs[3] - coeffs[2]}
     };
     // Compute alpha
-    std::complex<double> detU = U[0][0] * U[1][1] - U[0][1] * U[1][0];                                                                                                           [185/1826]    double alpha = 0.5 * atan2(std::imag(detU), std::real(detU));
+    std::complex<double> detU = U[0][0] * U[1][1] - U[0][1] * U[1][0];
+    double alpha = 0.5 * atan2(std::imag(detU), std::real(detU));
     for (int i = 0 ; i < 2UL ; ++i){
         for (int j = 0 ; j < 2UL ; ++j) {
             std::complex<double> factor = cos(alpha) + 1i * sin(alpha);
             U[i][j] *= factor;
-        }                                                                                                                                                                                      }
+        }                                                                         
+    }
     // Compute theta0, theta1 and theta2
     double theta0, theta1, theta2;
     if (std::abs(U[0][0]) > std::abs(U[0][1])) {
@@ -66,9 +73,12 @@ void UA(const qbool & breg) {
     }
     double sum = 0.;
     if (cos(theta1 / 2.) != 0.) {
-        std::complex<double> val = U[1][1] / cos(theta1 / 2.);                                                                                                                                     sum = 2 * atan2(std::imag(val), std::real(val));
-    }                                                                                                                                                                                          double diff = 0.;
-    if (sin(theta1 / 2.) != 0.) {                                                                                                                                                                  std::complex<double> val = U[1][0] / sin(theta1 / 2.);
+        std::complex<double> val = U[1][1] / cos(theta1 / 2.);
+        sum = 2 * atan2(std::imag(val), std::real(val));
+    }
+    double diff = 0.;
+    if (sin(theta1 / 2.) != 0.) {
+        std::complex<double> val = U[1][0] / sin(theta1 / 2.);
         diff = 2 * atan2(std::imag(val), std::real(val));
     }
     theta0 = (sum + diff) / 2.;
@@ -88,7 +98,8 @@ void UA(const qbool & breg) {
 
 # pragma quantum routine (std::array<double, 4UL> coeffs_mat)
 template <uint64_t SIZEC>
-void ControlledUA(const qbool & breg, const quint_t<SIZEC> & creg) {                                                                                                                           for (uint64_t i = 0 ; i < SIZEC ; ++i) {
+void ControlledUA(const qbool & breg, const quint_t<SIZEC> & creg) {
+    for (uint64_t i = 0 ; i < SIZEC ; ++i) {
         (UA(i, coeffs_mat)).ctrl(creg[SIZEC-i-1], breg);
     }
 }
@@ -97,18 +108,23 @@ void ControlledUA(const qbool & breg, const quint_t<SIZEC> & creg) {            
 template <uint64_t SIZEC>
 void QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
     wall::H<SIZEC>(creg);
-    (ControlledUA<SIZEC>(coeffs_mat))(breg, creg);                                                                                                                                             qft<SIZEC>.dag(creg);
+    (ControlledUA<SIZEC>(coeffs_mat))(breg, creg);
+    qft<SIZEC>.dag(creg);
 }
 
 template <uint64_t SIZEC>
 uint64_t QPEA(std::array<double, 4UL> coeffs_mat, const qbool & breg) {
     quint_t<SIZEC> creg;
-    (QPE<SIZEC>(coeffs_mat))(breg, creg);                                                                                                                                                      return measure_and_reset(creg);
-}                                                                                                                                                                                          
+    (QPE<SIZEC>(coeffs_mat))(breg, creg);
+    return measure_and_reset(creg);
+}
+
 template <uint64_t SIZEC>
-distribution get_distribution(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,                                                                                                                      uint64_t nb_shots=NB_SHOTS) {
-    qbool breg;                                                                                                                                                                                distribution distr;
-    double increment = 1. / (double) nb_shots;                                                                                                                                             
+distribution get_distribution(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
+                              uint64_t nb_shots=NB_SHOTS) {
+    qbool breg;
+    distribution distr;
+    double increment = 1. / (double) nb_shots;
     for (int i = 0 ; i < nb_shots ; ++i) {
         (state_prep(coeffs_b))(breg);
         uint64_t res = QPEA<SIZEC>(coeffs_mat, breg);
@@ -129,21 +145,30 @@ map_idmean get_fixed(distribution distr, uint64_t size) {
             curr = d.first & (1 << idx);
 
             if (prev != -1) {  
-                fixed = !(prev ^ curr);                                                                                                                                           [94/1826]
+                fixed = !(prev ^ curr);
             }
-                                                                                                                                                                                                       if (!fixed){                                                                                                                                                                                   break;                                                                                                                                                                                 }                                                                                                                                                                                                                                                                                                                                                                                     prev = curr;
+
+            if (!fixed){
+                break;
+            }
         }
-                                                                                                                                                                                                   if (fixed) {
+
+        if (fixed) {
             fixed_idx[idx] = curr;
         }
-    }                                                                                                                                                                                      
+    }
     return fixed_idx;
-}                                                                                                                                                                                          
-bool is_compatible(uint64_t lambda, map_idmean fixed_idx) {                                                                                                                                    for (auto e : fixed_idx) {
-        if (not (((lambda >> e.first) & 1UL) == e.second) ) {                                                                                                                                          return false;
+}
+
+bool is_compatible(uint64_t lambda, map_idmean fixed_idx) {
+    for (auto e : fixed_idx) {
+        if (not (((lambda >> e.first) & 1UL) == e.second) ) {
+            return false;
         }
-    }                                                                                                                                                                                          return true;
-}                                                                                                                                                                                          
+    }
+    return true;
+}
+
 #pragma quantum routine (double c, map_idmean fixed_idx)
 template <uint64_t SIZEC>
 void reduced_AQE(const quint_t<SIZEC> & creg, const qbool & anc) {
@@ -163,22 +188,34 @@ void reduced_AQE(const quint_t<SIZEC> & creg, const qbool & anc) {
 #pragma quantum routine (map_idmean fixed_idx, std::array<double, 4UL> coeffs_mat)
 template <uint64_t SIZEC>
 void reduced_QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
-   for (auto idx_m : fixed_idx) {  
-        uint64_t idx = idx_m.first;                                                                                                                                                [47/1826]
-       bool m = idx_m.second;
-       if (m) {                                                                                                                                                                                       X(creg[idx]);                                                                                                                                                                          }                                                                                                                                                                                          H(creg[idx]);                                                                                                                                                                              (UA(idx, coeffs_mat)).ctrl(creg[SIZEC - idx - 1], breg);                                                                                                                               }
+    for (auto idx_m : fixed_idx) {  
+        uint64_t idx = idx_m.first;
+        bool m = idx_m.second;
+        if (m) {
+            X(creg[idx]);
+        }
+        H(creg[idx]);
+        (UA(idx, coeffs_mat)).ctrl(creg[SIZEC - idx - 1], breg);
+    }
    qft<SIZEC>.dag(creg);
-}                                                                                                                                                                                          
+}
+
 template <uint64_t SIZEC>
 void reduced_HHL(std::array<double, 4UL> coeffs_mat, distribution & distr, double c,
-                 const qbool & breg, const quint_t<SIZEC> & creg) {                                                                                                                            qbool anc;
+                 const qbool & breg, const quint_t<SIZEC> & creg) {
+    qbool anc;
     map_idmean fixed_idx = get_fixed(distr, SIZEC);
-    (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat))(breg, creg);                                                                                                                                   (reduced_AQE<SIZEC>(c, fixed_idx))(creg, anc);
-    (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat)).dag(breg, creg);                                                                                                                               reset(anc);
-}                                                                                                                                                                                          
+    (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat))(breg, creg);
+    (reduced_AQE<SIZEC>(c, fixed_idx))(creg, anc);
+    (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat)).dag(breg, creg);
+    reset(anc);
+}
+
 template <uint64_t SIZE>
-std::array<double, SIZE> normalize(std::array<double, SIZE> coeffs) {                                                                                                                          double norm = 0.;
-    std::array<double, SIZE> res;                                                                                                                                                              for (int i = 0 ; i < SIZE ; ++i) {
+std::array<double, SIZE> normalize(std::array<double, SIZE> coeffs) {
+    double norm = 0.;
+    std::array<double, SIZE> res;
+    for (int i = 0 ; i < SIZE ; ++i) {
         norm += coeffs[i] * coeffs[i];
     }
     norm = sqrt(norm);
