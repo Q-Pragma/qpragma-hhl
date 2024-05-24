@@ -15,7 +15,21 @@ using map_idmean = std::unordered_map<uint64_t, bool>;
 const uint64_t NB_SHOTS = 1000UL;
 const double EPS = 1e-3;
 const uint64_t N_ITER_TROTTER = 100UL;
-const double NMAX = 100000;
+const uint64_t NMAX = 100UL;
+
+double bin_to_double(uint64_t nb_bits, uint64_t val) {
+    if (val == 0) {
+        return 1.;
+    }
+    else {
+        uint64_t reverse = 0;
+        for (int i = nb_bits - 1 ; i >=0 ; --i) {
+            reverse |= (val & 1UL) << i;
+            val >>= 1;
+        }
+        return (double) reverse / (double) (1 << nb_bits);
+    }
+}
 
 #pragma quantum routine (std::array<double, 2UL> coeffs)
 void state_prep(const qbool & q) {
@@ -25,28 +39,35 @@ void state_prep(const qbool & q) {
     RY(2 * acos(a))(q);
 }
 
+/* Hamiltonian simulation of A using Trotterization
+ * UA = e^(2i*pi*A) + O(...)
+*/
 #pragma quantum routine (uint64_t n, std::array<double, 4UL> coeffs)
 void UA (const qbool & breg) {
-    // Identity --> PH (which commutes with everything)
-    (PH(2 * coeffs[3UL] * (1 << n)))(breg);
+    // Identity --> just add a global phase
+    qbool anc;
+    CNOT(breg, anc);
+    RZ(4. * M_PI * coeffs[3] * (1 << n)).ctrl(anc, breg);
+    RZ(-4. * M_PI * coeffs[3] * (1 << n)).ctrl((qbool) not anc, breg);
+    CNOT(breg,anc);
     // Special case: only X and I
     if (coeffs[1] == 0. and coeffs[2] == 0.) {
-        RX(2. * coeffs[0] * (1 << n))(breg);
+        RX(-4. * M_PI * coeffs[0] * (1 << n))(breg);
     }
     // Special case: only Y and I
     else if (coeffs[0] == 0. and coeffs[2] == 0.) {
-        RY(2. * coeffs[1] * (1 << n))(breg);
+        RY(-4. * M_PI * coeffs[1] * (1 << n))(breg);
     }
     // Special case: only Z and I
     else if (coeffs[0] == 0. and coeffs[1] == 0.) {
-        RZ(2. * coeffs[2] * (1 << n))(breg);
+        RZ(-4. * M_PI * coeffs[2] * (1 << n))(breg);
     }
     else {
         for (int i = 0 ; i < (1 << n) ; ++i) {
             for (int j = 0 ; j < N_ITER_TROTTER ; ++j) {
-                RX(2. * coeffs[0] / N_ITER_TROTTER)(breg);
-                RY(2. * coeffs[1] / N_ITER_TROTTER)(breg);
-                RZ(2. * coeffs[2] / N_ITER_TROTTER)(breg);
+                RX(-4. * M_PI * coeffs[0] / N_ITER_TROTTER)(breg);
+                RY(-4. * M_PI * coeffs[1] / N_ITER_TROTTER)(breg);
+                RZ(-4. * M_PI * coeffs[2] / N_ITER_TROTTER)(breg);
             }
         }
     }
@@ -56,7 +77,7 @@ void UA (const qbool & breg) {
 template <uint64_t SIZEC>
 void ControlledUA(const qbool & breg, const quint_t<SIZEC> & creg) {
     for (uint64_t i = 0 ; i < SIZEC ; ++i) {
-        (UA(i, coeffs_mat)).ctrl(creg[SIZEC - i - 1], breg);
+        (UA(i, coeffs_mat)).ctrl(creg[i], breg);
     }
 }
 
@@ -133,17 +154,17 @@ bool is_compatible(uint64_t lambda, map_idmean fixed_idx) {
 template <uint64_t SIZEC>
 void reduced_AQE(const quint_t<SIZEC> & creg, const qbool & anc) {
     double theta;
-    for (uint64_t lambda = 0 ; lambda < (1 << SIZEC) ; ++lambda) {
-        if (is_compatible(lambda, fixed_idx)) {
-            theta = c / (double) lambda;
+    for (uint64_t val_c = 0 ; val_c < (1 << SIZEC) ; ++val_c) {
+        if (is_compatible(val_c, fixed_idx)) {
+            double lambda = bin_to_double(SIZEC, val_c);
+            theta = c / lambda;
             theta = 2 * acos( sqrt(1 - theta * theta) );
             // Optimizable with greycode
-            #pragma quantum ctrl (creg == lambda)
+            #pragma quantum ctrl (creg == val_c)
             (RY(theta))(anc);
         }
     }
 }
-
 
 #pragma quantum routine (map_idmean fixed_idx, std::array<double, 4UL> coeffs_mat)
 template <uint64_t SIZEC>
@@ -156,7 +177,7 @@ void reduced_QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
            X(creg[idx]);
        }
        H(creg[idx]);
-       (UA(idx, coeffs_mat)).ctrl(creg[SIZEC - idx - 1], breg);
+       (UA(idx, coeffs_mat)).ctrl(creg[idx], breg);
    }
    qft<SIZEC>.dag(creg);
 }
@@ -166,6 +187,7 @@ void reduced_HHL(std::array<double, 4UL> coeffs_mat, distribution & distr, doubl
                  const qbool & breg, const quint_t<SIZEC> & creg) {
     qbool anc;
     map_idmean fixed_idx = get_fixed(distr, SIZEC);
+    // 1 state is never reached :(
     //do {
         (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat))(breg, creg);
         (reduced_AQE<SIZEC>(c, fixed_idx))(creg, anc);
@@ -207,7 +229,6 @@ std::complex<double> condition_number(std::array<double, 4UL> coeffs_mat,
     }
     return lambda;
 }
-
 
 template <uint64_t SIZEC>
 void hybrid_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
@@ -274,18 +295,25 @@ int main() {
     const uint64_t SIZEC = 3UL;
     qbool breg;
     quint_t<SIZEC> creg;
-    std::array<double, 4UL> coeffs_mat = {0.,0.,1.,0.};
+    std::array<double, 4UL> coeffs_mat = {0.25,0.,0.,0.5};
     //coeffs_mat = normalize<4UL>(coeffs_mat);
     std::array<double, 2UL> coeffs_b = {1.,0.};
     coeffs_b = normalize<2UL>(coeffs_b);
     uint64_t NB_SHOT = 10UL;
-    //test_solver<SIZEC>(coeffs_mat, coeffs_b, NB_SHOT);
     std::vector<uint64_t> res(1<<SIZEC);
-    for (int i = 0 ; i < 1000 ; ++i){
-        (QPE<SIZEC>(coeffs_mat))(breg,creg);
+    #pragma quantum scope
+    // Display the eigenvalues of A
+    // /!\ They have to be in }0,1)
+    {
+    for (int i = 0 ; i < 1000 ; ++i) {
+        (QPE<SIZEC>(coeffs_mat))(breg, creg);
         res[measure_and_reset(creg)]++;
+        reset(breg);
     }
     for (int i = 0 ; i < (1 << SIZEC) ; ++i) {
-        std::cout << i << " : " << res[i] << std::endl;
+        std::cout << bin_to_double(SIZEC, i) << ":" << res[i] << std::endl;
+    }
+    // Test hhl: Do not work properly for the moment
+    test_solver<SIZEC>(coeffs_mat, coeffs_b, NB_SHOT);
     }
 }
