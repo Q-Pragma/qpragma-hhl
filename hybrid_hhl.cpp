@@ -9,9 +9,6 @@
 using namespace qpragma;
 
 
-using distribution = std::unordered_map<uint64_t, double>;
-using map_idmean = std::unordered_map<uint64_t, bool>;
-
 const uint64_t NB_SHOTS = 1000UL;
 const double EPS = 1e-3;
 const uint64_t N_ITER_TROTTER = 100UL;
@@ -97,102 +94,122 @@ uint64_t QPEA(std::array<double, 4UL> coeffs_mat, const qbool & breg) {
 }
 
 template <uint64_t SIZEC>
-distribution get_distribution(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
-                              uint64_t nb_shots=NB_SHOTS) {
+std::vector<uint64_t> get_eigenvals(std::array<double, 4UL> coeffs_mat,
+                                    std::array<double, 2UL> coeffs_b,
+                                    uint64_t nb_shots=NB_SHOTS) {
     qbool breg;
-    distribution distr;
-    double increment = 1. / (double) nb_shots;
+    std::array<bool, 1 << SIZEC> is_eigen;
+    for (int i = 0 ; i < (1 << SIZEC) ; ++i) {
+        is_eigen[i] = false;
+    }
 
     for (int i = 0 ; i < nb_shots ; ++i) {
         (state_prep(coeffs_b))(breg);
         uint64_t res = QPEA<SIZEC>(coeffs_mat, breg);
-        distr[res] += increment;
+        is_eigen[res] = true;
         reset(breg);
     }
-    return distr;
-}
 
-map_idmean get_fixed(distribution distr, uint64_t size) {
-    map_idmean fixed_idx;
-    for (uint64_t idx = 0UL ; idx < size ; ++idx) {
-        int prev = -1;
-        int curr;
-        bool fixed = true;
-
-        for (auto d : distr) {
-            curr = d.first & (1 << idx);
-
-            if (prev != -1) {
-                fixed = !(prev ^ curr);
-            }
-
-            if (!fixed){
-                break;
-            }
-
-            prev = curr;
-        }
-
-        if (fixed) {
-            fixed_idx[idx] = curr;
+    std::vector<uint64_t> eigenvals;
+    for (int i = 0 ; i < (1 << SIZEC) ; ++i) {
+        if (is_eigen[i]) {
+            eigenvals.push_back(i);
         }
     }
 
-    return fixed_idx;
+    return eigenvals;
 }
 
-bool is_compatible(uint64_t lambda, map_idmean fixed_idx) {
-    for (auto e : fixed_idx) {
-        if (not (((lambda >> e.first) & 1UL) == e.second) ) {
-            return false;
+template <uint64_t SIZEC>
+std::array<double, SIZEC> get_means(std::vector<uint64_t> eigenvals) {
+    std::array<double, SIZEC> means;
+    for (int i = 0 ; i < SIZEC ; ++i) {
+        means[i] = 0.;
+        for (uint64_t val : eigenvals) {
+            means[i] += (double) ((val >> i) & 1);
+        }
+        means[i] /= (double) eigenvals.size();
+    }
+    return means;
+}
+
+template <uint64_t SIZEC>
+bool is_compatible(uint64_t lambda, std::array<double, SIZEC> means, const uint64_t size) {
+    for (int i = 0 ; i < size ; ++i) {
+        if (means[i] == 0. or means[i] == 1.) {
+            if (((lambda >> i) & 1) != means[i]) {
+                return false;
+            }
+
         }
     }
     return true;
 }
 
-#pragma quantum routine (double c, map_idmean fixed_idx)
+#pragma quantum routine (double c, std::array<double, SIZEC> means)
 template <uint64_t SIZEC>
 void reduced_AQE(const quint_t<SIZEC> & creg, const qbool & anc) {
     double theta;
     for (uint64_t val_c = 0 ; val_c < (1 << SIZEC) ; ++val_c) {
-        if (is_compatible(val_c, fixed_idx)) {
+        if (is_compatible<SIZEC>(val_c, means, SIZEC)) {
             double lambda = bin_to_double(SIZEC, val_c);
-            theta = c / lambda;
-            theta = 2 * acos( sqrt(1 - theta * theta) );
-            // Optimizable with greycode
+            theta = 2. * acos( sqrt( 1. - c*c / lambda*lambda) );
             #pragma quantum ctrl (creg == val_c)
             (RY(theta))(anc);
         }
     }
 }
 
-#pragma quantum routine (map_idmean fixed_idx, std::array<double, 4UL> coeffs_mat)
+#pragma quantum routine (std::array<double, SIZEC> means)
+template <uint64_t SIZEC>
+void reduced_qft(const quint_t<SIZEC> & creg) {
+    for (int target = 0 ; target < SIZEC ; ++target) {
+        if (means[target] != 0.) {
+            if (means[target] != 1.) {
+                H(creg[target]);
+            }
+
+            for (int control = target + 1 ; control < SIZEC ; ++control) {
+                double angle = M_PI / (1 << (control - target));
+                if (means[control] == 1.) {
+                    (PH(angle))(creg[target]);
+                }
+
+                else if (means[control] != 0.) {
+                    PH(angle).ctrl(creg[control], creg[target]);
+                }
+            }
+        }
+    }
+}
+
+#pragma quantum routine (std::array<double, SIZEC> means, std::array<double, 4UL> coeffs_mat)
 template <uint64_t SIZEC>
 void reduced_QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
-   wall::H<SIZEC>(creg);
-   for (auto idx_m : fixed_idx) {
-       uint64_t idx = idx_m.first;
-       bool m = idx_m.second;
-       if (m) {
-           X(creg[idx]);
-       }
-       H(creg[idx]);
-       (UA(idx, coeffs_mat)).ctrl(creg[idx], breg);
-   }
-   qft<SIZEC>.dag(creg);
+   for (int i = 0 ; i < SIZEC ; ++i) {
+        if (means[i] == 1.) {
+            X(creg[i]);
+            (UA(i, coeffs_mat)).ctrl(creg[i], breg);
+        }
+
+        else if (means[i] != 0.) {
+            H(creg[i]);
+            (UA(i, coeffs_mat)).ctrl(creg[i], breg);
+        }
+    }
+    (reduced_qft<SIZEC>(means)).dag(creg);
 }
 
 template <uint64_t SIZEC>
-void reduced_HHL(std::array<double, 4UL> coeffs_mat, distribution & distr, double c,
-                 const qbool & breg, const quint_t<SIZEC> & creg) {
+void reduced_HHL(std::array<double, 4UL> coeffs_mat, std::vector<uint64_t> eigenvals,
+                 double c, const qbool & breg, const quint_t<SIZEC> & creg) {
     qbool anc;
-    map_idmean fixed_idx = get_fixed(distr, SIZEC);
-    // 1 state is never reached :(
-    //do {
-        (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat))(breg, creg);
-        (reduced_AQE<SIZEC>(c, fixed_idx))(creg, anc);
-        (reduced_QPE<SIZEC>(fixed_idx, coeffs_mat)).dag(breg, creg);
-    //} while (not measure_and_reset(anc));
+    std::array<double, SIZEC> means = get_means<SIZEC>(eigenvals);
+    do {
+        (reduced_QPE<SIZEC>(means, coeffs_mat))(breg, creg);
+        (reduced_AQE<SIZEC>(c, means))(creg, anc);
+        (reduced_QPE<SIZEC>(means, coeffs_mat)).dag(breg, creg);
+    } while (not measure_and_reset(anc));
 }
 
 template <uint64_t SIZE>
@@ -209,7 +226,7 @@ std::array<double, SIZE> normalize(std::array<double, SIZE> coeffs) {
     return res;
 }
 
-std::complex<double> condition_number(std::array<double, 4UL> coeffs_mat,
+std::complex<double> power_method(std::array<double, 4UL> coeffs_mat,
                                       double n_iter=NMAX) {
     std::complex<double> q[2] = {1., 1.};
     std::complex<double> lambda;
@@ -232,28 +249,20 @@ std::complex<double> condition_number(std::array<double, 4UL> coeffs_mat,
 
 template <uint64_t SIZEC>
 void hybrid_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
-                const quint_t<SIZEC> & creg, const qbool & breg) {
-    double c = std::abs(condition_number(coeffs_mat));
-    distribution distr = get_distribution<SIZEC>(coeffs_mat, coeffs_b);
-    // Display the distribution obtained with QPEA
-    // Problem: after a first call to hybrid_HHL, the distribution got is always
-    // broken (just 0 is obtained) --> I cannot explain it for the moment
-    for (auto e : distr) {
-        std::cout << e.first << " " << e.second << std::endl;
-    }
-    std::cout << "------" << std::endl;
+                double c, const quint_t<SIZEC> & creg, const qbool & breg) {
+    std::vector<uint64_t> eigenvals = get_eigenvals<SIZEC>(coeffs_mat, coeffs_b);
     (state_prep(coeffs_b))(breg);
-    reduced_HHL<SIZEC>(coeffs_mat, distr, c, breg, creg);
+    reduced_HHL<SIZEC>(coeffs_mat, eigenvals, c, breg, creg);
 }
 
 template <uint64_t SIZEC>
 void bug_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
-                 uint64_t nb_shots=NB_SHOTS) {
+                double c, uint64_t nb_shots=NB_SHOTS) {
     qbool breg;
     quint_t<SIZEC> creg;
     uint64_t res[2UL] = {0, 0};
     for (int i = 0 ; i < nb_shots ; ++i) {
-        hybrid_HHL<SIZEC>(coeffs_mat, coeffs_b, creg, breg);
+        hybrid_HHL<SIZEC>(coeffs_mat, coeffs_b, c, creg, breg);
         uint64_t valc = measure_and_reset(creg);
         H(breg);
         bool valb = measure_and_reset(breg);
@@ -267,9 +276,8 @@ void bug_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coef
 
 template <uint64_t SIZEC>
 void test_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
-                 uint64_t nb_shots=NB_SHOTS) {
-    double c = std::abs(condition_number(coeffs_mat));
-    distribution distr = get_distribution<SIZEC>(coeffs_mat, coeffs_b);
+                 double c, uint64_t nb_shots=NB_SHOTS) {
+    std::vector<uint64_t> eigenvals = get_eigenvals<SIZEC>(coeffs_mat, coeffs_b);
     qbool breg;
     quint_t<SIZEC> creg;
     uint64_t res[2UL] = {0, 0};
@@ -278,13 +286,14 @@ void test_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
     for (int i = 0 ; i < nb_shots ; ++i) {
         do {
             (state_prep(coeffs_b))(breg);
-            reduced_HHL<SIZEC>(coeffs_mat, distr, c ,breg, creg);
+            reduced_HHL<SIZEC>(coeffs_mat, eigenvals, c ,breg, creg);
             valc = measure_and_reset(creg);
             H(breg);
             valb = measure_and_reset(breg);
         } while (valc != 0);
         ++res[valb];
     }
+
     std::cout << "Final result: " << std::endl;
     std::cout << "0: " << res[0] / (double) nb_shots << " 1: "
               << res[1] / (double) nb_shots << std::endl;
@@ -296,24 +305,15 @@ int main() {
     qbool breg;
     quint_t<SIZEC> creg;
     std::array<double, 4UL> coeffs_mat = {0.25,0.,0.,0.5};
+    double c = 0.113;
     //coeffs_mat = normalize<4UL>(coeffs_mat);
     std::array<double, 2UL> coeffs_b = {1.,0.};
     coeffs_b = normalize<2UL>(coeffs_b);
-    uint64_t NB_SHOT = 10UL;
+    uint64_t NB_SHOT = 100UL;
     std::vector<uint64_t> res(1<<SIZEC);
     #pragma quantum scope
-    // Display the eigenvalues of A
-    // /!\ They have to be in }0,1)
     {
-    for (int i = 0 ; i < 1000 ; ++i) {
-        (QPE<SIZEC>(coeffs_mat))(breg, creg);
-        res[measure_and_reset(creg)]++;
-        reset(breg);
-    }
-    for (int i = 0 ; i < (1 << SIZEC) ; ++i) {
-        std::cout << bin_to_double(SIZEC, i) << ":" << res[i] << std::endl;
-    }
     // Test hhl: Do not work properly for the moment
-    test_solver<SIZEC>(coeffs_mat, coeffs_b, NB_SHOT);
+    test_solver<SIZEC>(coeffs_mat, coeffs_b, c, NB_SHOT);
     }
 }
