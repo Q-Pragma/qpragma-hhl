@@ -9,9 +9,9 @@
 using namespace qpragma;
 
 
-const uint64_t NB_SHOTS = 1000UL;
+const uint64_t NB_SHOTS = 100UL;
 const double EPS = 1e-3;
-const uint64_t N_ITER_TROTTER = 100UL;
+const uint64_t N_ITER_TROTTER = 10UL;
 const uint64_t NMAX = 100UL;
 
 
@@ -41,8 +41,8 @@ void UA(const qbool & breg) {
     // Identity --> just add a global phase
     qbool anc;
     CNOT(breg, anc);
-    RZ(4. * M_PI * coeffs[3] * (1 << n)).ctrl(anc, breg);
-    RZ(-4. * M_PI * coeffs[3] * (1 << n)).ctrl((qbool) not anc, breg);
+    RZ(-4. * M_PI * coeffs[3] * (1 << n)).ctrl(anc, breg);
+    RZ(4. * M_PI * coeffs[3] * (1 << n)).ctrl((qbool) not anc, breg);
     CNOT(breg,anc);
     // Special case: only X and I
     if (coeffs[1] == 0. and coeffs[2] == 0.) {
@@ -161,10 +161,8 @@ void reduced_AQE(const quint_t<SIZEC> & creg, const qbool & anc) {
     for (uint64_t val_c = 0 ; val_c < (1 << SIZEC) ; ++val_c) {
         // Only on the compatible with eigenvalues
         if (is_compatible<SIZEC>(val_c, means, SIZEC)) {
-            // Get the decimal value of the eigenvalue
-            double lambda = bin_to_double(SIZEC, val_c);
             // Angle of the rotation RY
-            double theta = 2. * acos( sqrt( 1. - c*c / lambda/lambda) );
+            double theta = 2. * acos(sqrt(1 - c*c /(val_c*val_c)));
             // Rotation on the ancilla controlled by the eigenvalue
             #pragma quantum ctrl (creg == val_c)
             (RY(theta))(anc);
@@ -224,16 +222,20 @@ void reduced_QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
 
 /* Reduced version of HHL */
 template <uint64_t SIZEC>
-void reduced_HHL(std::array<double, 4UL> coeffs_mat, std::vector<uint64_t> eigenvals,
-                 double c, const qbool & breg, const quint_t<SIZEC> & creg) {
+void reduced_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
+                 std::vector<uint64_t> eigenvals, double c,
+                 qbool & breg, quint_t<SIZEC> & creg) {
     qbool anc;
     // Get the means of the bits of the eigenvalues
     std::array<double, SIZEC> means = get_means<SIZEC>(eigenvals);
     // Post selection on ancilla in 1 state
     do {
+        reset(breg);
+        (state_prep(coeffs_b))(breg);
         (reduced_QPE<SIZEC>(means, coeffs_mat))(breg, creg);
         (reduced_AQE<SIZEC>(c, means))(creg, anc);
         (reduced_QPE<SIZEC>(means, coeffs_mat)).dag(breg, creg);
+        reset(creg);
     } while (not measure_and_reset(anc));
 }
 
@@ -280,29 +282,8 @@ void hybrid_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coef
                 double c, const quint_t<SIZEC> & creg, const qbool & breg) {
     // Get the estimation of the eigenvalues of the matrix
     std::vector<uint64_t> eigenvals = get_eigenvals<SIZEC>(coeffs_mat, coeffs_b);
-    // Prepare b state in breg
-    (state_prep(coeffs_b))(breg);
     // Call reduced HHL
-    reduced_HHL<SIZEC>(coeffs_mat, eigenvals, c, breg, creg);
-}
-
-/* Sover implementation that raised a problem, I'll chek if it is still*/
-template <uint64_t SIZEC>
-void bug_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coeffs_b,
-                double c, uint64_t nb_shots=NB_SHOTS) {
-    qbool breg;
-    quint_t<SIZEC> creg;
-    uint64_t res[2UL] = {0, 0};
-    for (int i = 0 ; i < nb_shots ; ++i) {
-        hybrid_HHL<SIZEC>(coeffs_mat, coeffs_b, c, creg, breg);
-        uint64_t valc = measure_and_reset(creg);
-        H(breg);
-        bool valb = measure_and_reset(breg);
-        ++res[valb];
-    }
-    std::cout << "Final result: " << std::endl;
-    std::cout << "0: " << res[0] / (double) nb_shots << " 1: "
-              << res[1] / (double) nb_shots << std::endl;
+    reduced_HHL<SIZEC>(coeffs_mat, coeffs_b, eigenvals, c, breg, creg);
 }
 
 /* Test the solver implementation */
@@ -315,7 +296,7 @@ void test_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
     std::cout << "Eigenvalues" << std::endl;
     for (auto l : eigenvals) {
         std::cout << "binary: " << l
-                  << ",decimal: " << bin_to_double(SIZEC, l)
+                  << ", decimal: " << bin_to_double(SIZEC, l)
                   << std::endl;
     }
     std::cout << std::endl;
@@ -331,15 +312,11 @@ void test_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
     bool valb;
     uint64_t valc;
     for (int i = 0 ; i < nb_shots ; ++i) {
-        std::cout << "SHOT n°" << i << std::endl;
-        // Prepare b state in breg
-        (state_prep(coeffs_b))(breg);
         // Call reduced HHL
-        reduced_HHL<SIZEC>(coeffs_mat, eigenvals, c ,breg, creg);
+        reduced_HHL<SIZEC>(coeffs_mat, coeffs_b, eigenvals, c ,breg, creg);
         // Measure creg in Z basis
         valc = measure_and_reset(creg);
         // Measure breg in X basis
-        H(breg);
         valb = measure_and_reset(breg);
         // Store the measurement result
         ++res[valb];
@@ -352,18 +329,18 @@ void test_solver(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
 
 // Main function
 int main() {
-    const uint64_t SIZEC = 4UL;
+    const uint64_t SIZEC = 2UL;
     qbool breg;
     quint_t<SIZEC> creg;
     std::array<double, 4UL> coeffs_mat = {0.25,0.,0.,0.5};
-    double c = 0.113;
-    std::array<double, 2UL> coeffs_b = {1.,0.};
+    double c = 0.25/0.75;
+    std::array<double, 2UL> coeffs_b = {1., 0.};
     coeffs_b = normalize<2UL>(coeffs_b);
-    uint64_t NB_SHOT = 100UL;
+    uint64_t NB_SHOT = 1000UL;
     std::vector<uint64_t> res(1<<SIZEC);
     #pragma quantum scope
     {
-    // Test hhl: Do not work properly for the moment
+    // Test hhl
     test_solver<SIZEC>(coeffs_mat, coeffs_b, c, NB_SHOT);
     }
 }
