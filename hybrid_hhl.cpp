@@ -73,7 +73,8 @@ void UA(const qbool & breg) {
 template <uint64_t SIZEC>
 void ControlledUA(const qbool & breg, const quint_t<SIZEC> & creg) {
     for (uint64_t i = 0 ; i < SIZEC ; ++i) {
-        (UA(i, coeffs_mat)).ctrl(creg[SIZEC - i - 1], breg);
+        #pragma quantum ctrl (creg[SIZEC - i - 1])
+        (UA(i, coeffs_mat))(breg);
     }
 }
 
@@ -191,7 +192,8 @@ void reduced_qft(const quint_t<SIZEC> & creg) {
                 }
 
                 else if (means[control] != 0.) {
-                    PH(angle).ctrl(creg[control], creg[target]);
+                    #pragma quantum ctrl (creg[control])
+                    (PH(angle))(creg[target]);
                 }
             }
         }
@@ -207,12 +209,14 @@ void reduced_QPE(const qbool & breg, const quint_t<SIZEC> & creg) {
         // if qubit i in 1 --> X
         if (means[idx] == 1.) {
             X(creg[idx]);
-            (UA(i, coeffs_mat)).ctrl(creg[idx], breg);
+            #pragma quantum ctrl (creg[idx])
+            (UA(i, coeffs_mat))(breg);
         }
         // if qubit mean not fixed --> H
         else if (means[i] != 0.) {
             H(creg[idx]);
-            (UA(i, coeffs_mat)).ctrl(creg[idx], breg);
+            #pragma quantum ctrl (creg[idx])
+            (UA(i, coeffs_mat))(breg);
         }
         // if qubit i in 0 --> nothing happens
     }
@@ -232,9 +236,14 @@ void reduced_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
     do {
         reset(breg);
         (state_prep(coeffs_b))(breg);
+        {
+        #pragma quantum compute
         (reduced_QPE<SIZEC>(means, coeffs_mat))(breg, creg);
+        
         (reduced_AQE<SIZEC>(c, means))(creg, anc);
-        (reduced_QPE<SIZEC>(means, coeffs_mat)).dag(breg, creg);
+        }
+        // Automatically uncompute reduced_QPE
+        
         reset(creg);
     } while (not measure_and_reset(anc));
 }
