@@ -237,10 +237,12 @@ void reduced_HHL(std::array<double, 4UL> coeffs_mat, std::array<double, 2UL> coe
         reset(breg);
         (state_prep(coeffs_b))(breg);
         {
-        #pragma quantum compute
-        (reduced_QPE<SIZEC>(means, coeffs_mat))(breg, creg);
-        
-        (reduced_AQE<SIZEC>(c, means))(creg, anc);
+            #pragma quantum compute
+            {
+            (reduced_QPE<SIZEC>(means, coeffs_mat))(breg, creg);
+            }
+            
+            (reduced_AQE<SIZEC>(c, means))(creg, anc);
         }
         // Automatically uncompute reduced_QPE
         
