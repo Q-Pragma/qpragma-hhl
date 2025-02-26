@@ -14,9 +14,78 @@
 #ifndef QPRAGMA_HHL_SIMULATION_HPP
 #define QPRAGMA_HHL_SIMULATION_HPP
 
+#include <ranges>
+#include <cmath>
+
+#include "qpragma.h"
+#include "qpragma/hhl/observables.hpp"
+
 
 namespace qpragma::hhl::simulation {
+    /**
+     * Given a Pauli term P, apply exp(-i P)
+     * to a quantum register
+     */
+    #pragma quantum routine(observables::PauliTerm<SIZE> term)
+    template <uint64_t SIZE>
+    void apply_term(const qpragma::array<SIZE> & qreg) {
+        using namespace qpragma;
+        using qpragma::hhl::observables::pauli_op;
 
+        // Apply a global phase if PauliTerm is (coeff, "III...I")
+        // This global phase is useful when this routine is controlled
+        if (term.is_identity()) {
+            qbool ancilla = true;
+            PH(term.coeff())(ancilla);
+        }
+
+        // Apply term
+        else {
+            qbool ancilla;
+
+            #pragma quantum compute
+            {
+                for (uint64_t idx = 0UL; idx < SIZE; ++idx) {
+                    // Apply base change
+                    switch (term[idx]) {
+                    case pauli_op::I:
+                        continue;
+                    case pauli_op::X:
+                        H(qreg[idx]);
+                        break;
+                    case pauli_op::Y:
+                        RX(-M_PI / 2.)(qreg[idx]);
+                        break;
+                    default:
+                        break;
+                    };
+
+                    // Apply CNOT
+                    CNOT(qreg[idx], ancilla);
+                }
+            }
+
+            RZ(term.coeff())(ancilla);
+        }
+    }
+
+
+    /**
+     * Perform hamiltonian simulation using a trotterization
+     */
+    #pragma quantum routine(observables::Observable<SIZE> observable, double esp)
+    template <uint64_t SIZE>
+    void trotterization(const qpragma::array<SIZE> & qreg) {
+        uint64_t n_trotter = 10UL;
+
+        observable *= 1. / static_cast<double>(n_trotter);
+
+        for (uint64_t t_step = 0UL; t_step < n_trotter; ++t_step) {
+            for (auto term: observable) {
+                (apply_term<SIZE>(term))(qreg);
+            }
+        }
+    }
 }   // qpragma::hhl::simulation
 
 #endif  /* QPRAGMA_HHL_SIMULATION_HPP */

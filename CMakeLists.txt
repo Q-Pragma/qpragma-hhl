@@ -18,11 +18,12 @@ include("cmake/environ.cmake")
 include_directories(${INCLUDE_DIR})
 
 set(qpragma-hhl-cpp
-        ${SRC_DIR}/observable.cpp)
+        )
 
 set(qpragma-hhl-headers
-        # ${INCLUDE_DIR}/qpragma/hhl.hpp
+        ${INCLUDE_DIR}/qpragma/hhl.hpp
         ${INCLUDE_DIR}/qpragma/hhl/observables.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/observables.ipp
         ${INCLUDE_DIR}/qpragma/hhl/simulations.hpp
         ${INCLUDE_DIR}/qpragma/hhl/stateprep.hpp)
 
