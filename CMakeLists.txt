@@ -1,23 +1,39 @@
-# PYBIND LINALG QPU
-message("-- Linking pybind Linalg QPU for demo")
-set(qpu qpragma-pybindlinalg)
+# ####################### #
+# Configure cmake project #
+# ####################### #
 
-# DISPLAY QPU
-#message("-- Linking Display QPU for demo")
-#set(qpu displayqpu)
+# Define project
+project(qpragma-hhl LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.10.2)
+
+# Define useful variables
+include("cmake/environ.cmake")
 
 
-set(cpp-source src/main.cpp)
+# ######################## #
+# Q-Pragma shor executable #
+# ######################## #
 
-# Compile using Q-Pragma plugin
-set_property(SOURCE ${cpp-source} PROPERTY COMPILE_FLAGS "-fplugin=$<TARGET_FILE:clang-qpragma> -I /utils")
+# Define C++ files
+include_directories(${INCLUDE_DIR})
 
-# Get target name
-#get_filename_component(cpp-target ${cpp-source} NAME_WE)
+set(qpragma-hhl-cpp
+        ${SRC_DIR}/observable.cpp)
 
-# Create executable
-add_executable(hybrid_hhl EXCLUDE_FROM_ALL ${cpp-source})
-add_dependencies(hybrid_hhl clang-qpragma)
+set(qpragma-hhl-headers
+        # ${INCLUDE_DIR}/qpragma/hhl.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/observables.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/simulations.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/stateprep.hpp)
 
-# Link QPU
-target_link_libraries(hybrid_hhl PUBLIC qpragma ${qpu})
+# Define compilation rules
+add_executable(qpragma-hhl ${qpragma-hhl-cpp} ${SRC_DIR}/main.cpp)
+target_link_libraries(qpragma-hhl qpragma qpragma-newlinalg qatnewlinalg boost_program_options)
+set_target_properties(
+    qpragma-hhl PROPERTIES PUBLIC_HEADER "${qpragma-hhl-headers}"
+                            LINKER_LANGUAGE CXX
+                            COMPILE_FLAGS -fplugin=qpragma-plugin.so)
+
+# Install
+install(TARGETS qpragma-hhl
+        RUNTIME DESTINATION usr/bin)
