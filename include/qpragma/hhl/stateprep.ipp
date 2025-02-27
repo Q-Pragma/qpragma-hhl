@@ -13,13 +13,13 @@ inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(const std::ar
 
     // init the leaves
     std::transform(init_array.begin(), init_array.end(),
-                   tree_vect.begin() + (1 << SIZE) - 1,
+                   tree_vect.begin() + (1 << SIZE) - 2,
                    [](double val){ return val * val; });
 
     // iter until the root is reached
     for (int64_t l = SIZE - 1 ; l >= 0 ; --l) {
-        uint64_t start_copy = (1 << (l+1)) - 1;
-        uint64_t start_store = (1 << l) - 1;
+        uint64_t start_copy = (1 << (l+1)) - 2;
+        uint64_t start_store = (1 << l) - 2;
         for (uint64_t idx = 0 ; idx < (1 << l) ; ++idx) {
             tree_vect[start_store + idx] = tree_vect[start_copy + 2*idx] + tree_vect[start_copy + 2*idx + 1];
         }
