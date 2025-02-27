@@ -14,9 +14,23 @@
 #ifndef QPRAGMA_HHL_STATEPREP_HPP
 #define QPRAGMA_HHL_STATEPREP_HPP
 
+using namespace qpragma;
 
 namespace qpragma::hhl::stateprep {
 
+    /**
+     * TREE APPROACH STATE PREP
+     * Perform a state preparation on a n-qubit quantum state
+     * according to a given vector of size 2^n. This is done
+     * following the tree approach provided in KP16
+     */
+
+    // Get the tree coefficients from a given array of size 2^SIZE
+    template <uint64_t SIZE>
+    std::vector<double> get_tree_coeff(std::array<double, (1 << SIZE)> /*init_array*/);
+
 }   // qpragma::hhl::stateprep
+
+#include "stateprep.ipp"
 
 #endif  /* QPRAGMA_HHL_STATEPREF_HLL */

@@ -25,7 +25,8 @@ set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl/observables.hpp
         ${INCLUDE_DIR}/qpragma/hhl/observables.ipp
         ${INCLUDE_DIR}/qpragma/hhl/simulations.hpp
-        ${INCLUDE_DIR}/qpragma/hhl/stateprep.hpp)
+        ${INCLUDE_DIR}/qpragma/hhl/stateprep.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/stateprep.ipp)
 
 # Define compilation rules
 add_executable(qpragma-hhl ${qpragma-hhl-cpp} ${SRC_DIR}/main.cpp)
