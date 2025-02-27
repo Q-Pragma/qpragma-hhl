@@ -7,8 +7,8 @@
 // Tree based state preparation
 
 template <uint64_t SIZE>
-inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(std::array<double, (1 << SIZE)> init_array) {
-    uint64_t nb_terms = (1 << (SIZE + 1)) - 1;  // 2^n+1 - 1
+inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(const std::array<double, (1UL << SIZE)> & init_array) {
+    uint64_t nb_terms = (1 << (SIZE + 1)) - 1;
     std::vector<double> tree_vect(nb_terms);
 
     // init the leaves

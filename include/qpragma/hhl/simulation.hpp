@@ -41,7 +41,8 @@ namespace qpragma::hhl::simulation {
 
         // Apply term
         else {
-            std::vector<uint64_t> cnot_keep;  // idx where pauli_op != I
+            // Get index of the first qubit having an operator no equal to I
+            ssize_t first_qubit = -1;
 
             // Apply base change
             #pragma quantum compute
@@ -52,26 +53,26 @@ namespace qpragma::hhl::simulation {
                         continue;
                     case pauli_op::X:
                         H(qreg[idx]);
-                        cnot_keep.push_back(idx);
                         break;
                     case pauli_op::Y:
                         RX(-M_PI / 2.)(qreg[idx]);
-                        cnot_keep.push_back(idx);
                         break;
                     default:
-                        cnot_keep.push_back(idx);
                         break;
                     };
+
+                    // Update "first_qbit" or apply CNOT
+                    if (first_qubit == -1) {
+                        first_qubit = static_cast<ssize_t>(idx);
+                    }
+
+                    else {
+                        CNOT(qreg[idx], qreg[first_qubit]);
+                    }
                 }
             }
 
-            #pragma quantum compute
-            {
-                for (uint64_t idx = 0 ; idx < cnot_keep.size() - 1UL ; ++idx) {
-                    CNOT(qreg[cnot_keep[idx]], qreg[cnot_keep[idx + 1]]);
-                }
-            }
-            RZ(term.coeff())(qreg[cnot_keep.back()]);
+            RZ(term.coeff())(qreg[first_qubit]);
         }
     }
 
