@@ -20,6 +20,7 @@
 #include <cmath>
 
 #include "qpragma.h"
+#include "qpragma/hhl/utils.hpp"
 
 
 namespace qpragma::hhl::stateprep {
@@ -40,7 +41,8 @@ namespace qpragma::hhl::stateprep {
     template <uint64_t SIZE>
     void kp_tree(const array<SIZE> & qreg) {
         if constexpr (SIZE == 1) {
-             double angle = 2. * sign(init_array[2]) * acos(sign(init_array[1] * sqrt(init_array[1])));
+             double angle = 2. * qpragma::hhl::utils::sign(init_array[2]) 
+                               * acos(qpragma::hhl::utils::sign(init_array[1] * sqrt(init_array[1])));
              (RY(angle))(qreg);
         }
 
@@ -65,8 +67,8 @@ namespace qpragma::hhl::stateprep {
 
             // Last iteration : take into account signs
             for (uint64_t ctrl_val = 0 ; ctrl_val << (1 < SIZE) ; ++ctrl_val) {
-                angle = 2 * sign(init_array[2 * ctrl_val + 1]) * acos(
-                    sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
+                angle = 2 * qpragma::hhl::utils::sign(init_array[2 * ctrl_val + 1]) * acos(
+                    qpragma::hhl::utils::sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
                 );
                 #pragma quantum ctrl (qreg(0, SIZE-2) == ctrl_val)
                 (RY(angle))(qreg[SIZE - 1]);
