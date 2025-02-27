@@ -41,31 +41,37 @@ namespace qpragma::hhl::simulation {
 
         // Apply term
         else {
-            qbool ancilla;
+            std::vector<uint64_t> cnot_keep;  // idx where pauli_op != I
 
+            // Apply base change
             #pragma quantum compute
             {
                 for (uint64_t idx = 0UL; idx < SIZE; ++idx) {
-                    // Apply base change
                     switch (term[idx]) {
                     case pauli_op::I:
                         continue;
                     case pauli_op::X:
                         H(qreg[idx]);
+                        cnot_keep.push_back(idx);
                         break;
                     case pauli_op::Y:
                         RX(-M_PI / 2.)(qreg[idx]);
+                        cnot_keep.push_back(idx);
                         break;
                     default:
+                        cnot_keep.push_back(idx);
                         break;
                     };
-
-                    // Apply CNOT
-                    CNOT(qreg[idx], ancilla);
                 }
             }
 
-            RZ(term.coeff())(ancilla);
+            #pragma quantum compute
+            {
+                for (uint64_t idx = 0 ; idx < cnot_keep.size() - 1UL ; ++idx) {
+                    CNOT(qreg[cnot_keep[idx]], qreg[cnot_keep[idx + 1]]);
+                }
+            }
+            RZ(term.coeff())(qreg[cnot_keep.back()]);
         }
     }
 
