@@ -32,4 +32,4 @@ namespace qpragma::hhl::stateprep {
 
 #include "stateprep.ipp"
 
-#endif  /* QPRAGMA_HHL_STATEPREF_HLL */
+#endif  /* QPRAGMA_HHL_STATEPREF_HPP */

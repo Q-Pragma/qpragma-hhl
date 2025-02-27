@@ -18,7 +18,7 @@ include("cmake/environ.cmake")
 include_directories(${INCLUDE_DIR})
 
 set(qpragma-hhl-cpp
-        )
+        ${SRC_DIR}/utils.cpp)
 
 set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl.hpp
@@ -26,7 +26,9 @@ set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl/observables.ipp
         ${INCLUDE_DIR}/qpragma/hhl/simulations.hpp
         ${INCLUDE_DIR}/qpragma/hhl/stateprep.hpp
-        ${INCLUDE_DIR}/qpragma/hhl/stateprep.ipp)
+        ${INCLUDE_DIR}/qpragma/hhl/stateprep.ipp
+        ${INCLUDE_DIR}/qpragma/hhl/utils.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/utils.ipp)
 
 # Define compilation rules
 add_executable(qpragma-hhl ${qpragma-hhl-cpp} ${SRC_DIR}/main.cpp)

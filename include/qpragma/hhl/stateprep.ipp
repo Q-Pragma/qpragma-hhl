@@ -1,8 +1,14 @@
+#include <cstdint>
+#include <array>
+#include <cmath>
+
+#include "qpragma/hhl/utils.hpp"
+
 // Tree based state preparation
 
 template <uint64_t SIZE>
 inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(std::array<double, (1 << SIZE)> init_array) {
-    uint64_t nb_terms = (1 << (SIZE + 1)) - 1;
+    uint64_t nb_terms = (1 << (SIZE + 1)) - 1;  // 2^n+1 - 1
     std::vector<double> tree_vect(nb_terms);
     // init the leaves
     std::transform(init_array.begin(), init_array.end(),
@@ -23,8 +29,9 @@ inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(std::array<do
 template <uint64_t SIZE>
 void tree_state_prep(const qpragma::quint_t<SIZE> & qreg) {
     if constexpr (SIZE == 1) {
-         double angle = 2. * sign(init_array[2]) * acos(sign(init_array[1] * sqrt(init_array[1])));
-         (qpragma::RY(angle))(qreg);
+        double angle = 2. * qpragma::hhl::utils::sign(init_array[2])
+            * acos(qpragma::hhl::utils::sign(init_array[1] * sqrt(init_array[1])));
+        (qpragma::RY(angle))(qreg);
     }
     else {
         std::vector<double> tree_vect = qpragma::hhl::stateprep::get_tree_coeff<SIZE>(init_array);
@@ -42,8 +49,8 @@ void tree_state_prep(const qpragma::quint_t<SIZE> & qreg) {
         }
         // Last iteration : take into account signs
         for (uint64_t ctrl_val = 0 ; ctrl_val << (1 < SIZE) ; ++ctrl_val) {
-            angle = 2 * sign(init_array[2 * ctrl_val + 1]) * acos(
-                sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
+            angle = 2 * qpragma::hhl::utils::sign(init_array[2 * ctrl_val + 1]) * acos(
+                qpragma::hhl::utils::sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
             );
             #pragma quantum ctrl (qreg(0, SIZE-2) == ctrl_val)
             (qpragma::RY(angle))(qreg[SIZE - 1]);
