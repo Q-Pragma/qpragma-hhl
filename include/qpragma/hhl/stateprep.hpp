@@ -33,7 +33,7 @@ namespace qpragma::hhl::stateprep {
 
     // Get the tree coefficients from a given array of size 2^SIZE
     template <uint64_t SIZE>
-    std::vector<double> get_tree_coeff(std::array<double, (1UL << SIZE)> /* init_array */);
+    inline std::vector<double> get_tree_coeff(const std::array<double, (1UL << SIZE)> & /* init_array */);
 
 
     #pragma quantum routine (std::array<double, (1 << SIZE)> init_array)
