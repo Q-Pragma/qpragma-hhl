@@ -21,23 +21,23 @@ inline std::vector<double> qpragma::hhl::stateprep::get_tree_coeff(std::array<do
 
 #pragma quantum routine (std::array<double, (1 << SIZE)> init_array)
 template <uint64_t SIZE>
-void tree_state_prep(const quint_t<SIZE> & qreg) {
+void tree_state_prep(const qpragma::quint_t<SIZE> & qreg) {
     if constexpr (SIZE == 1) {
          double angle = 2. * sign(init_array[2]) * acos(sign(init_array[1] * sqrt(init_array[1])));
-         (RY(angle))(qreg);
+         (qpragma::RY(angle))(qreg);
     }
     else {
         std::vector<double> tree_vect = qpragma::hhl::stateprep::get_tree_coeff<SIZE>(init_array);
         // First rotation on the first qubit
         double angle = 2 * acos(sqrt(tree_vect[1]));
-        (RY(angle))(qreg[0]);
+        (qpragma::RY(angle))(qreg[0]);
         // Iter until the leaves (excluded) are reached --> work only with proba
         for (uint64_t idx = 1 ; idx < SIZE - 1 ; ++idx) {
             uint64_t start_val = (1 << (idx + 1)) - 1;
             for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << idx) ; ++ctrl_val) {
                 angle = 2 * acos(sqrt(tree_vect[start_val + 2 * ctrl_val]));
                 #pragma quantum ctrl (qreg(0, idx-1) == ctrl_val)
-                (RY(angle))(qreg[idx]);
+                (qpragma::RY(angle))(qreg[idx]);
             }
         }
         // Last iteration : take into account signs
@@ -46,7 +46,7 @@ void tree_state_prep(const quint_t<SIZE> & qreg) {
                 sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
             );
             #pragma quantum ctrl (qreg(0, SIZE-2) == ctrl_val)
-            (RY(angle))(qreg[SIZE - 1]);
+            (qpragma::RY(angle))(qreg[SIZE - 1]);
         }
     }
 }

@@ -14,7 +14,6 @@
 #ifndef QPRAGMA_HHL_STATEPREP_HPP
 #define QPRAGMA_HHL_STATEPREP_HPP
 
-using namespace qpragma;
 
 namespace qpragma::hhl::stateprep {
 
