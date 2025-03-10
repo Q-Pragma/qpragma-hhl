@@ -73,7 +73,7 @@ namespace qpragma::hhl::stateprep {
                 for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << idx) ; ++ctrl_val) {
                     angle = 2 * acos(sqrt(tree_vect[start_val + 2 * ctrl_val]));
 
-                    #pragma quantum ctrl (qreg(0, idx-1) == ctrl_val)
+                    #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(0, idx-1)) == ctrl_val)
                     (RY(angle))(qreg[idx]);
                 }
             }
@@ -83,7 +83,7 @@ namespace qpragma::hhl::stateprep {
                 angle = 2 * qpragma::hhl::utils::sign(init_array[2 * ctrl_val + 1]) * acos(
                     qpragma::hhl::utils::sign(init_array[2 * ctrl_val]) * sqrt(tree_vect[ctrl_val + 2 * ctrl_val])
                 );
-                #pragma quantum ctrl (qreg(0, SIZE-2) == ctrl_val)
+                #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(0, SIZE-2)) == ctrl_val)
                 (RY(angle))(qreg[SIZE - 1]);
             }
         }
