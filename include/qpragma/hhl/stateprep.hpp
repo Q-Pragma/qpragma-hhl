@@ -53,7 +53,7 @@ namespace qpragma::hhl::stateprep {
     #pragma quantum routine (std::array<double, (1 << SIZE)> init_array)
     template <uint64_t SIZE>
     void kp_tree(const array<SIZE> & qreg) {
-        if constexpr (SIZE == 1) {
+        if constexpr (SIZE == 1UL) {
              double angle = 2. * qpragma::hhl::utils::sign(init_array[2]) 
                                * acos(qpragma::hhl::utils::sign(init_array[1] * sqrt(init_array[1])));
              (RY(angle))(qreg);
@@ -86,6 +86,7 @@ namespace qpragma::hhl::stateprep {
                 #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(0, SIZE-2)) == ctrl_val)
                 (RY(angle))(qreg[SIZE - 1]);
             }
+
         }
     }
 }   // qpragma::hhl::stateprep
