@@ -65,10 +65,6 @@ namespace qpragma::hhl::stateprep {
         // Multi-qubit system
         else {
             std::vector<double> tree_vect = qpragma::hhl::stateprep::get_tree_coeff<SIZE>(init_array);
-            for (auto e : tree_vect) {
-                std::cout << e << std::endl;
-            }
-
             // First rotation on the first qubit
             double angle = 2 * acos(sqrt(tree_vect[1]));
             (RY(angle))(qreg[SIZE - 1UL]);
@@ -82,10 +78,11 @@ namespace qpragma::hhl::stateprep {
                 for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << idx) ; ++ctrl_val) {
                     left = tree_vect[start_val + 2 * ctrl_val];
                     right = tree_vect[start_val + 2 * ctrl_val + 1];
-                    angle = 2 * acos(sqrt(left / (left + right)));
-
-                    #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-1, SIZE-1-idx,-1)) == ctrl_val)
-                    (RY(angle))(qreg[SIZE - 1UL - idx]);
+                    if (left + right > _TOL) {
+                        angle = 2 * acos(sqrt(left / (left + right)));
+                        #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-1, SIZE-1-idx,-1)) == ctrl_val)
+                        (RY(angle))(qreg[SIZE - 1UL - idx]);
+                    }
                 }
             }
 
