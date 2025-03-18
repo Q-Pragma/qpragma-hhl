@@ -80,7 +80,7 @@ namespace qpragma::hhl::stateprep {
                     right = tree_vect[start_val + 2 * ctrl_val + 1];
                     if (left + right > _TOL) {
                         angle = 2 * acos(sqrt(left / (left + right)));
-                        #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-1, SIZE-1-idx,-1)) == ctrl_val)
+                        #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-1, SIZE-idx,-1)) == ctrl_val)
                         (RY(angle))(qreg[SIZE - 1UL - idx]);
                     }
                 }
@@ -88,7 +88,7 @@ namespace qpragma::hhl::stateprep {
 
             // Last iteration : take into account signs from init_array
             start_val = (1 << SIZE) - 1;
-            for (uint64_t ctrl_val = 0 ; ctrl_val < 1 << (1 < SIZE) ; ++ctrl_val) {
+            for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << (SIZE-1)) ; ++ctrl_val) {
                 double sign_left = qpragma::hhl::utils::sign(init_array[2 * ctrl_val]);
                 double sign_right = qpragma::hhl::utils::sign(init_array[2 * ctrl_val + 1]);
                 left = tree_vect[start_val + 2 * ctrl_val];
