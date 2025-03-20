@@ -14,14 +14,15 @@ using basic_hhl = qpragma::hybrid_hhl<SIZE, decltype(kp_tree<SIZE>({})), decltyp
 
 
 void test_state_prep() {
-    const uint64_t SIZE = 3UL;
-    const uint64_t NB_SHOTS = 2;
+    const uint64_t SIZE = 4UL;
+    const uint64_t NB_SHOTS = 100;
     //init_array = qpragma::hhl::utils::normalize<SIZE>(init_array);
     std::vector<double> res(1 << SIZE);
     for (int i = 0 ; i < NB_SHOTS ; ++i) {
         qpragma::quint_t<SIZE> qreg;
         std::cout << "shot " << i << std::endl;
-        std::array<double, 1 << SIZE> init_array {0.,0.,1.,0., 0.,0.,0.,0.};
+        std::array<double, 1 << SIZE> init_array {0.,0.,1.,1., 1.,0.,0.,0., 0., 0., 0., 0., 0., 0., 0., 0.8};
+        init_array = qpragma::hhl::utils::normalize<SIZE>(init_array);
         (kp_tree<SIZE>(init_array))(qreg);
         auto idx = qpragma::measure_and_reset(qreg);
         res[idx] += 1.;
@@ -38,7 +39,7 @@ int main() {
     std::array<double, 1 << SIZE> init_array {0.2, 0.3, 0.4, 0.5};
 
     Observable<SIZE> obs { term_vect };
-    qpragma::array<SIZE> qreg;
+    // qpragma::array<SIZE> qreg;
 
     //basic_hhl<SIZE>(kp_tree<SIZE>(init_array), trotterization<SIZE>(obs, 0.3))(qreg);
     test_state_prep();
