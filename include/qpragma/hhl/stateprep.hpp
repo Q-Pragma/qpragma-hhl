@@ -67,7 +67,9 @@ namespace qpragma::hhl::stateprep {
             std::vector<double> tree_vect = qpragma::hhl::stateprep::get_tree_coeff<SIZE>(init_array);
             // First rotation on the first qubit
             double angle = 2 * acos(sqrt(tree_vect[1]));
-            (RY(angle))(qreg[SIZE - 1UL]);
+            if (std::abs(angle) > _TOL) {
+                (RY(angle))(qreg[SIZE - 1UL]);
+            }
 
             // Iter until the leaves (excluded) are reached --> work only with proba
             uint64_t start_val;
@@ -80,8 +82,10 @@ namespace qpragma::hhl::stateprep {
                     right = tree_vect[start_val + 2 * ctrl_val + 1];
                     if (left + right > _TOL) {
                         angle = 2 * acos(sqrt(left / (left + right)));
-                        #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-1, SIZE-idx,-1)) == ctrl_val)
-                        (RY(angle))(qreg[SIZE - 1UL - idx]);
+                        if (std::abs(angle) > _TOL) {
+                            #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-idx, SIZE-1)) == ctrl_val)
+                            (RY(angle))(qreg[SIZE - 1UL - idx]);
+                        }
                     }
                 }
             }
@@ -95,8 +99,10 @@ namespace qpragma::hhl::stateprep {
                 right = tree_vect[start_val + 2 * ctrl_val + 1];
                 if (left + right > _TOL) {
                     angle = 2 * sign_right * acos(sign_left * sqrt(left / (left + right)));
-                    #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE - 1, 1, -1)) == ctrl_val)
-                    (RY(angle))(qreg[0]);
+                    if (std::abs(angle) > _TOL) {
+                        #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(1, SIZE -1)) == ctrl_val)
+                        (RY(angle))(qreg[0]);
+                    }
                 }
             }
         }
