@@ -60,7 +60,7 @@ namespace qpragma::hhl::simulation {
             // Apply base change
             #pragma quantum compute
             {
-                for (uint64_t idx = 0UL; idx < SIZE; ++idx) {
+                for (int64_t idx = SIZE - 1; idx >= 0; --idx) {
                     switch (term[idx]) {
                     case pauli_op::I:
                         continue;
@@ -69,11 +69,11 @@ namespace qpragma::hhl::simulation {
                         break;
                     case pauli_op::Y:
                         RX(-M_PI / 2.)(qreg[idx]);
+
                         break;
                     default:
                         break;
                     };
-
                     // Update "first_qbit" or apply CNOT
                     if (first_qubit == -1) {
                         first_qubit = static_cast<ssize_t>(idx);
@@ -98,7 +98,7 @@ namespace qpragma::hhl::simulation {
     void trotterization(const qpragma::array<SIZE> & qreg) {
         uint64_t n_trotter = 10UL;
 
-        observable *= 1. / static_cast<double>(n_trotter);
+        observable *= -1. / static_cast<double>(n_trotter);
 
         for (uint64_t t_step = 0UL; t_step < n_trotter; ++t_step) {
             for (auto term: observable) {
