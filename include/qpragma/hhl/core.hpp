@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*- */
 /*
- * @file        qpragma/hhl.hpp
+ * @file        qpragma/hhl/core.hpp
  * @authors     Arnaud GAZDA <arnaud.gazda@eviden.com>
  *
  * @copyright   Licensed to the Apache Software Foundation (ASF) under one
@@ -19,35 +19,48 @@
  *              KIND, either express or implied.  See the License for the
  *              specific language governing permissions and limitations
  *              under the License.
- *
- * @brief
- *
  */
 
-#ifndef QPRAGMA_HHL_HPP
-#define QPRAGMA_HHL_HPP
+#ifndef QPRAGMA_HHL_CORE_HPP
+#define QPRAGMA_HHL_CORE_HPP
 
 #include "qpragma.h"
-#include "qpragma/hhl/core.hpp"
 #include "qpragma/hhl/observables.hpp"
-#include "qpragma/hhl/simulation.hpp"
-#include "qpragma/hhl/stateprep.hpp"
-
-#define DEFINE_HHL_IMPLEMENTATION(name, state_prep_t, simu_t) \
-    template <uint64_t SIZE> \
-    void name ( \
-        const qpragma::array<SIZE> & qreg, \
-        const std::array<double, (1UL << SIZE)> & init, \
-        const qpragma::hhl::observables::Observable<SIZE> & observable \
-    ) { \
-        return qpragma::hhl::hybrid_hhl<SIZE, decltype(state_prep_t{ init }), decltype(simu_t{ observable })>( \
-            qreg, init, observable \
-        ); \
-    }
 
 
 namespace qpragma::hhl {
-    DEFINE_HHL_IMPLEMENTATION(basic_hhl, stateprep::kp_tree<SIZE>, simulation::trotterization<SIZE>)
+    /**
+     * Controlled hamiltonian simulation
+     * This function performs a QPE (without QFT at the end)
+     */
+    #pragma quantum routine (const HAM_SIM & simu)
+    template <uint64_t SIZE, uint64_t SIZE_C, typename HAM_SIM>
+    void controlled_simu(const array<SIZE> & reg, const array<SIZE_C> & creg) {
+        for (uint64_t idx = 0UL; idx < SIZE_C; ++idx) {
+            #pragma quantum ctrl(creg[SIZE_C - idx - 1UL])
+            simu(reg);  // TODO: For loop
+        }
+    }
+
+
+    template <uint64_t SIZE, typename STATE_PREP, typename HAM_SIM>
+    void hybrid_hhl(
+        const qpragma::array<SIZE> & qreg,
+        const std::array<double, (1UL << SIZE)> & init,
+        const qpragma::hhl::observables::Observable<SIZE> & observable
+    ) {
+        STATE_PREP state_prep { init };
+        HAM_SIM simu { observable };
+
+        state_prep(qreg);
+        // simu(qreg);
+        //
+
+        array<SIZE> creg;
+        (controlled_simu<SIZE, SIZE, HAM_SIM>(simu))(qreg, creg);
+    }
 }
 
-#endif  /* QPRAGMA_HLL_HPP */
+
+#endif  /* QAT_ */
+

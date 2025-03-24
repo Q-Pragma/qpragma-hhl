@@ -93,7 +93,7 @@ namespace qpragma::hhl::simulation {
     /**
      * Perform hamiltonian simulation using a trotterization
      */
-    #pragma quantum routine(observables::Observable<SIZE> observable, double esp)
+    #pragma quantum routine(observables::Observable<SIZE> observable, double esp = 0.3)
     template <uint64_t SIZE>
     void trotterization(const qpragma::array<SIZE> & qreg) {
         uint64_t n_trotter = 10UL;

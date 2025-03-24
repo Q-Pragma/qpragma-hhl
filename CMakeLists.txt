@@ -22,6 +22,7 @@ set(qpragma-hhl-cpp
 
 set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl.hpp
+        ${INCLUDE_DIR}/qpragma/hhl/core.hpp
         ${INCLUDE_DIR}/qpragma/hhl/observables.hpp
         ${INCLUDE_DIR}/qpragma/hhl/observables.ipp
         ${INCLUDE_DIR}/qpragma/hhl/simulations.hpp
