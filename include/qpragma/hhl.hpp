@@ -36,7 +36,7 @@
 #define DEFINE_HHL_IMPLEMENTATION(name, state_prep_t, simu_t) \
     template <uint64_t SIZE> \
     void name ( \
-        const qpragma::array<SIZE> & qreg, \
+        qpragma::quint_t<SIZE> & qreg, \
         const std::array<double, (1UL << SIZE)> & init, \
         const qpragma::hhl::observables::Observable<SIZE> & observable \
     ) { \

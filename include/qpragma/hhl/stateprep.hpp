@@ -55,7 +55,7 @@ namespace qpragma::hhl::stateprep {
 
     #pragma quantum routine (std::array<double, (1 << SIZE)> init_array)
     template <uint64_t SIZE>
-    void kp_tree(const array<SIZE> & qreg) {
+    void kp_tree(const quint_t<SIZE> & qreg) {
         // 1-qubit system
         if constexpr (SIZE == 1UL) {
             double angle = 2. * qpragma::hhl::utils::sign(init_array[1]) 

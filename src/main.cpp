@@ -36,15 +36,13 @@ void test_state_prep() {
 
 int main() {
     const uint64_t SIZE = 3UL;
+    const uint64_t SIZE_C = 3UL;
     PauliTerm<SIZE> term { "XII", 5.2 };
     std::vector term_vect { term };
     std::array<double, 1 << SIZE> init_array {0.2, 0.3, 0.4, 0.5};
 
     Observable<SIZE> obs { term_vect };
-    qpragma::array<SIZE> qreg;
+    qpragma::quint_t<SIZE> qreg;
 
-    //basic_hhl<SIZE>(kp_tree<SIZE>(init_array), trotterization<SIZE>(obs, 0.3))(qreg);
-    test_state_prep();
-
-    qpragma::hhl::basic_hhl(qreg, init_array, obs);
+    qpragma::hhl::basic_hhl<SIZE_C>(qreg, init_array, obs);
 }
