@@ -34,13 +34,13 @@
 #include "qpragma/hhl/stateprep.hpp"
 
 #define DEFINE_HHL_IMPLEMENTATION(name, state_prep_t, simu_t) \
-    template <uint64_t SIZE> \
+    template <uint64_t SIZE, uint64_t SIZE_C> \
     void name ( \
         qpragma::quint_t<SIZE> & qreg, \
         const std::array<double, (1UL << SIZE)> & init, \
         const qpragma::hhl::observables::Observable<SIZE> & observable \
     ) { \
-        return qpragma::hhl::hybrid_hhl<SIZE, decltype(state_prep_t{ init }), decltype(simu_t{ observable })>( \
+        return qpragma::hhl::hybrid_hhl<SIZE, SIZE_C, decltype(state_prep_t{ init }), decltype(simu_t{ observable })>( \
             qreg, init, observable \
         ); \
     }

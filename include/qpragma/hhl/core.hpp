@@ -206,7 +206,7 @@ namespace qpragma::hhl {
     }
 
 
-    template <uint64_t SIZE, typename STATE_PREP, typename HAM_SIM>
+    template <uint64_t SIZE, uint64_t SIZE_C, typename STATE_PREP, typename HAM_SIM>
     void hybrid_hhl(
         qpragma::quint_t<SIZE> & qreg,
         const std::array<double, (1UL << SIZE)> & init,
@@ -216,7 +216,6 @@ namespace qpragma::hhl {
         STATE_PREP state_prep { init };
         HAM_SIM simu { observable };
 
-        const uint64_t SIZE_C = 3UL;
         double c = 3.;  // TODO: trouver la valeur de c
         quint_t<SIZE_C> creg;
         // Hybrid quantum-classical sampling of eigenvalues

@@ -44,5 +44,5 @@ int main() {
     Observable<SIZE> obs { term_vect };
     qpragma::quint_t<SIZE> qreg;
 
-    qpragma::hhl::basic_hhl<SIZE_C>(qreg, init_array, obs);
+    qpragma::hhl::basic_hhl<SIZE, SIZE_C>(qreg, init_array, obs);
 }
