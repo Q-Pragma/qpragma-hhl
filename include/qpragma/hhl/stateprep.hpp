@@ -37,6 +37,7 @@
 #include "qpragma.h"
 #include "qpragma/hhl/utils.hpp"
 
+using namespace qpragma::hhl::utils;
 
 namespace qpragma::hhl::stateprep {
     const double _TOL = 1e-8;
@@ -58,13 +59,12 @@ namespace qpragma::hhl::stateprep {
     void kp_tree(const quint_t<SIZE> & qreg) {
         // 1-qubit system
         if constexpr (SIZE == 1UL) {
-            double angle = 2. * qpragma::hhl::utils::sign(init_array[1]) 
-                               * acos(qpragma::hhl::utils::sign(init_array[0]) * init_array[0]);
+            double angle = 2. * sign(init_array[1]) * acos(sign(init_array[0]) * init_array[0]);
             (RY(angle))(qreg);
         }
         // Multi-qubit system
         else {
-            std::vector<double> tree_vect = qpragma::hhl::stateprep::get_tree_coeff<SIZE>(init_array);
+            std::vector<double> tree_vect = get_tree_coeff<SIZE>(init_array);
             // First rotation on the first qubit
             double angle = 2 * acos(sqrt(tree_vect[1]));
             if (std::abs(angle) > _TOL) {
@@ -93,8 +93,8 @@ namespace qpragma::hhl::stateprep {
             // Last iteration : take into account signs from init_array
             start_val = (1 << SIZE) - 1;
             for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << (SIZE-1)) ; ++ctrl_val) {
-                double sign_left = qpragma::hhl::utils::sign(init_array[2 * ctrl_val]);
-                double sign_right = qpragma::hhl::utils::sign(init_array[2 * ctrl_val + 1]);
+                double sign_left = sign(init_array[2 * ctrl_val]);
+                double sign_right = sign(init_array[2 * ctrl_val + 1]);
                 left = tree_vect[start_val + 2 * ctrl_val];
                 right = tree_vect[start_val + 2 * ctrl_val + 1];
                 if (left + right > _TOL) {

@@ -7,6 +7,7 @@
 using namespace qpragma::hhl::observables;
 using namespace qpragma::hhl::simulation;
 using namespace qpragma::hhl::stateprep;
+using namespace qpragma::hhl::utils;
 
 
 // template <uint64_t SIZE>
@@ -14,23 +15,23 @@ using namespace qpragma::hhl::stateprep;
 
 // DEFINE_HHL_IMPLEMENTATION(basic_hhl, kp_tree<SIZE>, trotterization<SIZE>);
 
-
-void test_state_prep() {
-    const uint64_t SIZE = 4UL;
-    const uint64_t NB_SHOTS = 100;
-    //init_array = qpragma::hhl::utils::normalize<SIZE>(init_array);
-    std::vector<double> res(1 << SIZE);
-    for (int i = 0 ; i < NB_SHOTS ; ++i) {
-        qpragma::quint_t<SIZE> qreg;
-        std::cout << "shot " << i << std::endl;
-        std::array<double, 1 << SIZE> init_array {0.,0.,1.,1., 1.,0.,0.,0., 0., 0., 0., 0., 0., 0., 0., 0.8};
-        init_array = qpragma::hhl::utils::normalize<SIZE>(init_array);
-        (kp_tree<SIZE>(init_array))(qreg);
-        auto idx = qpragma::measure_and_reset(qreg);
-        res[idx] += 1.;
+template<uint64_t SIZE>
+void print_state(const std::array<double, 1 << SIZE> & arr) {
+    for (uint64_t i = 0UL; i < 1 << SIZE ; ++i) {
+        std::cout << i << " : " << arr[i] << std::endl;
     }
-    for (int i = 0 ; i < 1 << SIZE ; ++i) {
-        std::cout << i << " : " << res[i] << std::endl;
+}
+
+template<uint64_t SIZE, uint64_t NB_SHOTS>
+void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
+
+    std::vector<double> res(1 << SIZE);
+    for (uint64_t i = 0UL; i < NB_SHOTS ; ++i) {
+        qpragma::quint_t<SIZE> qreg;
+        init_array = normalize<SIZE>(init_array);
+        (kp_tree<SIZE>(init_array))(qreg);
+        bool idx = qpragma::measure_and_reset(qreg);
+        res[idx] += 1.;
     }
 }
 
@@ -45,4 +46,10 @@ int main() {
     qpragma::quint_t<SIZE> qreg;
 
     qpragma::hhl::basic_hhl<SIZE, SIZE_C>(qreg, init_array, obs);
+
+    std::array<double, 1 << 4UL> array_state_prep {0.,0.,1.,1., 1.,0.,0.,0., 0., 0., 0., 0., 0., 0., 0., 0.8};
+    test_state_prep<4UL, 100UL>(array_state_prep);
+    print_state<4UL>(array_state_prep);
+
+    
 }

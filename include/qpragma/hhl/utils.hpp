@@ -39,14 +39,14 @@ namespace qpragma::hhl::utils {
 
    /* Normalize an array of coefficients */
    template <uint64_t SIZE>
-   std::array<double, (1 << SIZE)> normalize(std::array<double, (1 << SIZE)> /*coeffs*/);
+   std::array<double, (1 << SIZE)> normalize(const std::array<double, (1 << SIZE)> & /*coeffs*/);
 
    /* Convert the binary value to a double flotting point value */
    double bin_to_double(uint64_t /*nb_bits*/, uint64_t /*val*/);
 
    /* Get the mean of each bit of all the eigenvalues */
    template <uint64_t SIZEC>
-   std::array<double, SIZEC> get_means(std::vector<uint64_t> /*eigenvals*/);
+   std::array<double, SIZEC> get_means(const std::vector<uint64_t> & /*eigenvals*/);
 
 }   // qpragma::hhl::utils
 

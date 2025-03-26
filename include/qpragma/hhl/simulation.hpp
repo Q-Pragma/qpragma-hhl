@@ -69,19 +69,15 @@ namespace qpragma::hhl::simulation {
                         break;
                     case pauli_op::Y:
                         RX(-M_PI / 2.)(qreg[idx]);
-
                         break;
                     default:
                         break;
                     };
                     // Update "first_qbit" or apply CNOT
-                    if (first_qubit == -1) {
+                    if (first_qubit == -1)
                         first_qubit = static_cast<ssize_t>(idx);
-                    }
-
-                    else {
+                    else
                         CNOT(qreg[idx], qreg[first_qubit]);
-                    }
                 }
             }
 

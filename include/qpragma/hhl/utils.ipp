@@ -2,13 +2,15 @@
 
 /* Normalize an array of coefficients */
 template <uint64_t SIZE>
-std::array<double, (1 << SIZE)> qpragma::hhl::utils::normalize(std::array<double, (1 << SIZE)> coeffs) {
+std::array<double, (1 << SIZE)> qpragma::hhl::utils::normalize(const std::array<double, (1 << SIZE)> & coeffs) {
+    
     double norm = 0.;
-    std::array<double, (1 << SIZE)> res(coeffs);
-    for (int i = 0 ; i < coeffs.size() ; ++i) {
+    for (uint64_t i = 0UL ; i < (1 << SIZE) ; ++i) {
         norm += coeffs[i] * coeffs[i];
     }
     norm = sqrt(norm);
+    
+    std::array<double, (1 << SIZE)> res(coeffs);
     std::transform(res.cbegin(), res.cend(),
                    res.begin(),
                    [norm](double e) {return e/norm; });
@@ -17,16 +19,20 @@ std::array<double, (1 << SIZE)> qpragma::hhl::utils::normalize(std::array<double
 }
 
 /* Get the mean of each bit of all the eigenvalues */
-template <uint64_t SIZEC>
-std::array<double, SIZEC> qpragma::hhl::utils::get_means(std::vector<uint64_t> eigenvals) {
-    std::array<double, SIZEC> means;
-    for (int i = 0 ; i < SIZEC ; ++i) {
-        means[i] = 0.;
+template <uint64_t SIZE_C>
+std::array<double, SIZE_C> qpragma::hhl::utils::get_means(const std::vector<uint64_t>& eigenvals) {
+
+    size_t nb_eigenvals = eigenvals.size();
+    std::array<double, SIZE_C> means{};
+
+    for (uint64_t i = 0UL ; i < SIZE_C ; ++i) {
+        double mean = 0.;
         // Compute the mean on bit i
         for (uint64_t val : eigenvals) {
-            means[i] += (double) ((val >> i) & 1);
+            mean += (val >> i) & 1;
         }
-        means[i] /= (double) eigenvals.size();
+        means[i] = mean / nb_eigenvals;
     }
+
     return means;
 }
