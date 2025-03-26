@@ -39,9 +39,9 @@ namespace qpragma::hhl {
     #pragma quantum routine (const HAM_SIM & simu)
     template <uint64_t SIZE, uint64_t SIZE_C, typename HAM_SIM>
     void controlled_simu(const quint_t<SIZE> & qreg, const quint_t<SIZE_C> & creg) {
-        for (uint64_t idx = 0UL; idx < SIZE_C; ++idx) {
-            for (uint64_t loop_step = 0UL ; loop_step < (1 << idx) ; ++loop_step) {
-                #pragma quantum ctrl(creg[SIZE_C - idx - 1UL])
+        for (int64_t idx = SIZE_C - 1; idx >= 0; --idx) {
+            for (uint64_t loop_step = 0UL ; loop_step < (1UL << idx) ; ++loop_step) {
+                #pragma quantum ctrl(creg[idx])
                 simu(qreg);
             }
         }
@@ -68,21 +68,22 @@ namespace qpragma::hhl {
     template <uint64_t SIZE, uint64_t SIZE_C, typename HAM_SIM, typename STATE_PREP>
     std::vector<uint64_t> get_eigenvals(const HAM_SIM & simu, const STATE_PREP & state_prep) {
         // Initialize an array to check if a value is an eigenvalue
-        std::array<bool, 1 << SIZE_C> is_eigen;
-        is_eigen.fill(false);
+        std::array<uint64_t, 1 << SIZE_C> is_eigen;
+        is_eigen.fill(0UL);
 
         quint_t<SIZE> qreg;
         // Sample on QPE
         for (uint64_t i = 0UL; i < _NB_SHOTS ; ++i) {
             state_prep(qreg);
             uint64_t res = QPEA<SIZE, SIZE_C, HAM_SIM>(simu, qreg);
-            is_eigen[res] = true;
+            ++is_eigen[res];
             reset(qreg);
         }
 
         // Create the vector containing the eigenvalues
         std::vector<uint64_t> eigenvals;
         for (uint64_t i = 0UL; i < (1 << SIZE_C) ; ++i) {
+            std::cout << utils::bin_to_double(SIZE_C, i) << " : " << is_eigen[i] << std::endl;
             if (is_eigen[i])
                 eigenvals.push_back(i);
         }
@@ -192,7 +193,7 @@ namespace qpragma::hhl {
                     reduced_QPE<SIZE, SIZE_C, HAM_SIM>(simu, means)(qreg, creg);
                 }
         
-                (reduced_AQE<SIZE_C>(c, means))(qreg, anc);
+                (reduced_AQE<SIZE_C>(c, means))(creg, anc);
             }
             // Automatically uncompute reduced_QPE
             
@@ -218,12 +219,12 @@ namespace qpragma::hhl {
         
         std::cout << "Start printing eigenvals :" << std::endl;
         for (uint64_t i = 0UL; i < eigenvals.size() ; ++i) {
-            std::cout << i << " : " << eigenvals[i] << std::endl;
+            std::cout << i << " : " << utils::bin_to_double(SIZE_C, eigenvals[i]) << std::endl;
         }
         std::cout << "End printing eigenvals" << std::endl;
         
         // Call to reduced HHL
-        reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
+        //reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
     }
 }
 

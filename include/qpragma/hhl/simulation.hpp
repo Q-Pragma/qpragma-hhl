@@ -49,7 +49,7 @@ namespace qpragma::hhl::simulation {
         // This global phase is useful when this routine is controlled
         if (term.is_identity()) {
             qbool ancilla = true;
-            PH(term.coeff())(ancilla);
+            PH(4 * M_PI * term.coeff())(ancilla);
         }
 
         // Apply term
@@ -81,7 +81,7 @@ namespace qpragma::hhl::simulation {
                 }
             }
 
-            RZ(term.coeff())(qreg[first_qubit]);
+            RZ(4. * M_PI * term.coeff())(qreg[first_qubit]);
         }
     }
 
@@ -89,7 +89,7 @@ namespace qpragma::hhl::simulation {
     /**
      * Perform hamiltonian simulation using a trotterization
      */
-    #pragma quantum routine(observables::Observable<SIZE> observable, double esp = 0.3)
+    #pragma quantum routine(observables::Observable<SIZE> observable, double eps = 0.3)
     template <uint64_t SIZE>
     void trotterization(const qpragma::array<SIZE> & qreg) {
         uint64_t n_trotter = 10UL;

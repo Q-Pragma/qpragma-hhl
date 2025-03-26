@@ -35,21 +35,18 @@ void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
     }
 }
 
+
 int main() {
-    const uint64_t SIZE = 3UL;
-    const uint64_t SIZE_C = 3UL;
-    PauliTerm<SIZE> term { "XII", 5.2 };
-    std::vector term_vect { term };
-    std::array<double, 1 << SIZE> init_array {0.2, 0.3, 0.4, 0.5};
+    const uint64_t SIZE = 1UL;
+    const uint64_t SIZE_C = 2UL;
+    PauliTerm<SIZE> term1 { "I", 0.5 };
+    PauliTerm<SIZE> term2 {"X", 0.25 };
+    std::vector term_vect { term1, term2 };
+    std::array<double, 1 << SIZE> init_array {1., 0.};
 
     Observable<SIZE> obs { term_vect };
     qpragma::quint_t<SIZE> qreg;
 
     qpragma::hhl::basic_hhl<SIZE, SIZE_C>(qreg, init_array, obs);
-
-    std::array<double, 1 << 4UL> array_state_prep {0.,0.,1.,1., 1.,0.,0.,0., 0., 0., 0., 0., 0., 0., 0., 0.8};
-    test_state_prep<4UL, 100UL>(array_state_prep);
-    print_state<4UL>(array_state_prep);
-
-    
 }
+
