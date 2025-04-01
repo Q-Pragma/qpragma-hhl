@@ -39,8 +39,9 @@ namespace qpragma::hhl {
     #pragma quantum routine (const HAM_SIM & simu)
     template <uint64_t SIZE, uint64_t SIZE_C, typename HAM_SIM>
     void controlled_simu(const quint_t<SIZE> & qreg, const quint_t<SIZE_C> & creg) {
-        for (int64_t idx = SIZE_C - 1; idx >= 0; --idx) {
-            for (uint64_t loop_step = 0UL ; loop_step < (1UL << idx) ; ++loop_step) {
+        constexpr int64_t signed_size = static_cast<int64_t>(SIZE_C);
+        for (int64_t idx = signed_size - 1L ; idx >= 0L ; --idx) {
+            for (int64_t loop_step = 0L ; loop_step < (1L << idx) ; ++loop_step) {
                 #pragma quantum ctrl(creg[idx])
                 simu(qreg);
             }
@@ -83,7 +84,6 @@ namespace qpragma::hhl {
         // Create the vector containing the eigenvalues
         std::vector<uint64_t> eigenvals;
         for (uint64_t i = 0UL; i < (1 << SIZE_C) ; ++i) {
-            std::cout << utils::bin_to_double(SIZE_C, i) << " : " << is_eigen[i] << std::endl;
             if (is_eigen[i])
                 eigenvals.push_back(i);
         }
@@ -123,7 +123,8 @@ namespace qpragma::hhl {
     #pragma quantum routine (std::array<double, SIZE_C> means)
     template <uint64_t SIZE_C>
     void reduced_qft(const quint_t<SIZE_C> & creg) {
-        for (uint64_t target = 0UL ; target < SIZE_C ; ++target) {
+        constexpr int64_t signed_size = static_cast<int64_t>(SIZE_C);
+        for (int64_t target = signed_size - 1L ; target >= 0L ; --target) {
             // On 0 nothing happens here
             if (means[target] == 0.)
                 continue;
@@ -133,25 +134,26 @@ namespace qpragma::hhl {
                 H(creg[target]);
 
             // controlled phase part of the QFT
-            for (uint64_t control = target + 1UL ; control < SIZE_C ; ++control) {
-                double angle = M_PI / (1 << (control - target));
+            for (int64_t control = target - 1L ; control >= 0L ; --control) {
+                double angle = M_PI / (1 << (target - control));
                 if (means[control] == 1.) {
                     // No control needed because control qubit always 1
                     (PH(angle))(creg[target]);
                 }
                 else if (means[control] != 0.) {
-                    #pragma quantum ctrl (creg[control])
-                    (PH(angle))(creg[target]);
+                    (PH(angle)).ctrl(creg[control], creg[target]);
                 }
             }
         }
+        reverse_order<SIZE_C>(creg);
     }
 
     /* Reduced QPE */
     #pragma quantum routine (const HAM_SIM & simu, std::array<double, SIZE_C> means)
     template <uint64_t SIZE, uint64_t SIZE_C, typename HAM_SIM>
     void reduced_QPE(const quint_t<SIZE> & qreg, const quint_t<SIZE_C> & creg) {
-        for (int64_t idx = SIZE_C - 1UL ; idx >= 0 ; --idx) {
+        constexpr int64_t signed_size = static_cast<int64_t>(SIZE_C);
+        for (int64_t idx = signed_size - 1L ; idx >= 0L ; --idx) {
             // if qubit i in 0 --> nothing happens
             if (means[idx] == 0.)
                 continue;
@@ -164,11 +166,14 @@ namespace qpragma::hhl {
             else
                 H(creg[idx]);
             
-            #pragma quantum ctrl (creg[idx])
-            simu(qreg);
+            for (int64_t loop_step = 0L ; loop_step < (1L << idx) ; ++loop_step) {
+                #pragma quantum ctrl (creg[idx])
+                simu(qreg);
+            }
         }
         // Call the reduced QFT
-        (reduced_qft<SIZE_C>(means))(creg);
+        (reduced_qft<SIZE_C>(means)).dag(creg);
+
     }
 
     /* Reduced version of HHL */
@@ -212,8 +217,6 @@ namespace qpragma::hhl {
         STATE_PREP state_prep { init };
         HAM_SIM simu { observable };
 
-        double c = 3.;  // TODO: trouver la valeur de c
-
         // Hybrid quantum-classical sampling of eigenvalues
         std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
         
@@ -222,9 +225,11 @@ namespace qpragma::hhl {
             std::cout << i << " : " << utils::bin_to_double(SIZE_C, eigenvals[i]) << std::endl;
         }
         std::cout << "End printing eigenvals" << std::endl;
+
+        double c = 3.;  // TODO: trouver la valeur de c
         
         // Call to reduced HHL
-        //reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
+        reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
     }
 }
 
