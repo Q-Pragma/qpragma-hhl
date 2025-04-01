@@ -49,7 +49,7 @@ namespace qpragma::hhl::simulation {
         // This global phase is useful when this routine is controlled
         if (term.is_identity()) {
             qbool ancilla = true;
-            PH(-2 * M_PI * term.coeff())(ancilla);
+            PH(- M_PI * term.coeff())(ancilla);
         }
 
         // Apply term
@@ -81,7 +81,7 @@ namespace qpragma::hhl::simulation {
                 }
             }
 
-            RZ(4. * M_PI * term.coeff())(qreg[first_qubit]);
+            RZ(2. * M_PI * term.coeff())(qreg[first_qubit]);
         }
     }
 

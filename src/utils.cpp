@@ -11,10 +11,10 @@ double qpragma::hhl::utils::sign(const double & d) {
 
 /* Convert the binary value to a double flotting point value */
 double qpragma::hhl::utils::bin_to_double(uint64_t nb_bits, uint64_t val) {
-    if (val == 0) {
-        return 1.;  // 0.000 and 1.000 equivalent but only 1. can be eigenvalue
+    if (val <= (1 << (nb_bits - 1))) {
+        return (double) val / (double) (1 << (nb_bits - 1));
     }
     else {
-        return (double) val / (double) (1 << nb_bits);
+        return (double) val / (double) ( 1 << (nb_bits - 1)) - 2.;
     }
 }
