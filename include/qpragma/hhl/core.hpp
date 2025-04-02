@@ -111,7 +111,7 @@ namespace qpragma::hhl {
             // Only on the compatible values with eigenvalues
             if (is_compatible<SIZE_C>(val_c, means, SIZE_C)) {
                 // Angle of the rotation RY
-                double theta = 2. * acos(sqrt(1 - c*c /(val_c*val_c)));
+                double theta = 2. * acos(sqrt(1 - c*c / (static_cast<double>(val_c) * val_c)));
                 // Rotation on the ancilla controlled by the eigenvalue
                 #pragma quantum ctrl (creg == val_c)
                 (RY(theta))(anc);
@@ -173,7 +173,6 @@ namespace qpragma::hhl {
         }
         // Call the reduced QFT
         (reduced_qft<SIZE_C>(means)).dag(creg);
-
     }
 
     /* Reduced version of HHL */
@@ -183,16 +182,17 @@ namespace qpragma::hhl {
                      std::vector<uint64_t> eigenvals,
                      double c,
                      quint_t<SIZE> & qreg) {
-        qbool anc = 0;
         // Get the means of the bits of the eigenvalues
         std::array<double, SIZE_C> means = utils::get_means<SIZE_C>(eigenvals);
         
-        quint_t<SIZE_C> creg;
+        qbool anc = 0;
         // Post selection on ancilla in 1 state
         do {
             reset(qreg);
             state_prep(qreg);
             {
+                quint_t<SIZE_C> creg = 0UL;
+
                 #pragma quantum compute
                 {
                     reduced_QPE<SIZE, SIZE_C, HAM_SIM>(simu, means)(qreg, creg);
@@ -201,8 +201,6 @@ namespace qpragma::hhl {
                 (reduced_AQE<SIZE_C>(c, means))(creg, anc);
             }
             // Automatically uncompute reduced_QPE
-            
-            reset(creg);
         } while (not measure_and_reset(anc));
     }
 
@@ -220,13 +218,13 @@ namespace qpragma::hhl {
         // Hybrid quantum-classical sampling of eigenvalues
         std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
         
+        double c = 1.;
         std::cout << "Start printing eigenvals :" << std::endl;
         for (uint64_t i = 0UL; i < eigenvals.size() ; ++i) {
             std::cout << i << " : " << utils::bin_to_double(SIZE_C, eigenvals[i]) << std::endl;
+            if (utils::bin_to_double(SIZE_C, eigenvals[i]) < c) { c = utils::bin_to_double(SIZE_C, eigenvals[i]); }
         }
         std::cout << "End printing eigenvals" << std::endl;
-
-        double c = 3.;  // TODO: trouver la valeur de c
         
         // Call to reduced HHL
         reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
