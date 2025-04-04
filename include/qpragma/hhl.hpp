@@ -38,10 +38,11 @@
     void name ( \
         qpragma::quint_t<SIZE> & qreg, \
         const std::array<double, (1UL << SIZE)> & init, \
-        const qpragma::hhl::observables::Observable<SIZE> & observable \
+        const qpragma::hhl::observables::Observable<SIZE> & observable, \
+        double eps = 0.1 \
     ) { \
         qpragma::hhl::hybrid_hhl<SIZE, SIZE_C, decltype(state_prep_t{ init }), decltype(simu_t{ observable })>( \
-            qreg, init, observable \
+            qreg, init, observable, eps \
         ); \
     }
 
@@ -50,10 +51,11 @@
     std::array<uint64_t, 1UL << SIZE> name ( \
         const std::array<double, (1UL << SIZE)> & init, \
         const qpragma::hhl::observables::Observable<SIZE> & observable, \
-        uint64_t nb_shots = 1UL \
+        uint64_t nb_shots = 1UL, \
+        double eps = 0.1 \
     ) { \
         return qpragma::hhl::hybrid_hhl_with_sampling<SIZE, SIZE_C, decltype(state_prep_t{ init }), decltype(simu_t{ observable })>( \
-            init, observable, nb_shots \
+            init, observable, nb_shots, eps \
         ); \
     }
 

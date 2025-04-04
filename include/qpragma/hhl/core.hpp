@@ -211,11 +211,12 @@ namespace qpragma::hhl {
     void hybrid_hhl(
         qpragma::quint_t<SIZE> & qreg,
         const std::array<double, (1UL << SIZE)> & init,
-        const qpragma::hhl::observables::Observable<SIZE> & observable
+        const qpragma::hhl::observables::Observable<SIZE> & observable,
+        double eps = 0.1
     ) {
         // Initialize the state preparation and hamiltonian simulation
         STATE_PREP state_prep { init };
-        HAM_SIM simu { observable };
+        HAM_SIM simu { observable, eps };
 
         // Hybrid quantum-classical sampling of eigenvalues
         std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
@@ -235,11 +236,12 @@ namespace qpragma::hhl {
     std::array<uint64_t, 1UL << SIZE> hybrid_hhl_with_sampling(
         const std::array<double, (1UL << SIZE)> & init,
         const qpragma::hhl::observables::Observable<SIZE> & observable,
-        uint64_t nb_shots = 1UL
+        uint64_t nb_shots = 1UL,
+        double eps = 0.1
     ) {
         // Initialize the state preparation and hamiltonian simulation
         STATE_PREP state_prep { init };
-        HAM_SIM simu { observable };
+        HAM_SIM simu { observable, eps };
 
         // Hybrid quantum-classical sampling of eigenvalues
         std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
