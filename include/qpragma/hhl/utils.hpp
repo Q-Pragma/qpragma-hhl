@@ -37,9 +37,12 @@ namespace qpragma::hhl::utils {
    /* Get the sign of a double*/
    double sign(const double & /*d*/);
 
-   /* Normalize an array of coefficients */
+   /**
+    * Normalize an array of coefficients
+    * The argyment is updating inplace to avoid a copy
+    */
    template <uint64_t SIZE>
-   std::array<double, (1 << SIZE)> normalize(const std::array<double, (1 << SIZE)> & /*coeffs*/);
+   void normalize(std::array<double, (1 << SIZE)> & /*coeffs*/);
 
    /* Convert the binary value to a double flotting point value */
    double bin_to_double(uint64_t /*nb_bits*/, uint64_t /*val*/);

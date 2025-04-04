@@ -30,7 +30,7 @@ void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
     std::vector<double> res(1 << SIZE);
     for (uint64_t i = 0UL; i < NB_SHOTS ; ++i) {
         qpragma::quint_t<SIZE> qreg;
-        init_array = normalize<SIZE>(init_array);
+        normalize<SIZE>(init_array);
         (kp_tree<SIZE>(init_array))(qreg);
         bool idx = qpragma::measure_and_reset(qreg);
         res[idx] += 1.;
