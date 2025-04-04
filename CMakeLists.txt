@@ -10,15 +10,16 @@ cmake_minimum_required(VERSION 3.10.2)
 include("cmake/environ.cmake")
 
 
-# ######################## #
-# Q-Pragma shor executable #
-# ######################## #
+# ####################### #
+# Q-Pragma HHL executable #
+# ####################### #
 
 # Define C++ files
 include_directories(${INCLUDE_DIR})
 
 set(qpragma-hhl-cpp
-        ${SRC_DIR}/utils.cpp)
+        ${SRC_DIR}/utils.cpp
+        ${SRC_DIR}/main.cpp)
 
 set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl.hpp
@@ -32,7 +33,7 @@ set(qpragma-hhl-headers
         ${INCLUDE_DIR}/qpragma/hhl/utils.ipp)
 
 # Define compilation rules
-add_executable(qpragma-hhl ${qpragma-hhl-cpp} ${SRC_DIR}/main.cpp)
+add_executable(qpragma-hhl ${qpragma-hhl-cpp})
 target_link_libraries(qpragma-hhl qpragma qpragma-newlinalg qatnewlinalg boost_program_options)
 set_target_properties(
     qpragma-hhl PROPERTIES PUBLIC_HEADER "${qpragma-hhl-headers}"
