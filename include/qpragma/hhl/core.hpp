@@ -111,7 +111,8 @@ namespace qpragma::hhl {
             // Only on the compatible values with eigenvalues
             if (is_compatible<SIZE_C>(val_c, means, SIZE_C)) {
                 // Angle of the rotation RY
-                double theta = 2. * acos(sqrt(1 - c*c / (static_cast<double>(val_c) * val_c)));
+                double val_c_d = utils::bin_to_double(SIZE_C, val_c);
+                double theta = utils::sign(val_c_d) * acos(sqrt(1 - c*c / (val_c_d * val_c_d)));
                 // Rotation on the ancilla controlled by the eigenvalue
                 #pragma quantum ctrl (creg == val_c)
                 (RY(theta))(anc);
@@ -195,12 +196,13 @@ namespace qpragma::hhl {
 
                 #pragma quantum compute
                 {
-                    reduced_QPE<SIZE, SIZE_C, HAM_SIM>(simu, means)(qreg, creg);
+                    (QPE<SIZE, SIZE_C, HAM_SIM>(simu))(qreg, creg);
                 }
         
                 (reduced_AQE<SIZE_C>(c, means))(creg, anc);
+
+                // Automatically uncompute QPE
             }
-            // Automatically uncompute reduced_QPE
         } while (not measure_and_reset(anc));
     }
 
@@ -218,19 +220,48 @@ namespace qpragma::hhl {
         // Hybrid quantum-classical sampling of eigenvalues
         std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
         
+        // Find the smallest eigenvalue (in abs)
         double c = 1.;
-        std::cout << "Start printing eigenvals :" << std::endl;
         for (uint64_t i = 0UL; i < eigenvals.size() ; ++i) {
-            std::cout << i << " : " << utils::bin_to_double(SIZE_C, eigenvals[i]) << std::endl;
-            if (utils::bin_to_double(SIZE_C, eigenvals[i]) < c) { c = utils::bin_to_double(SIZE_C, eigenvals[i]); }
+            double abs_eig = fabs(utils::bin_to_double(SIZE_C, eigenvals[i]));
+            if (abs_eig < c)
+                c = abs_eig;
         }
-        std::cout << "End printing eigenvals" << std::endl;
-        
-        // Call to reduced HHL
+
         reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
     }
-}
 
+    template <uint64_t SIZE, uint64_t SIZE_C, typename STATE_PREP, typename HAM_SIM>
+    std::array<uint64_t, 1UL << SIZE> hybrid_hhl_with_sampling(
+        const std::array<double, (1UL << SIZE)> & init,
+        const qpragma::hhl::observables::Observable<SIZE> & observable,
+        uint64_t nb_shots = 1UL
+    ) {
+        // Initialize the state preparation and hamiltonian simulation
+        STATE_PREP state_prep { init };
+        HAM_SIM simu { observable };
+
+        // Hybrid quantum-classical sampling of eigenvalues
+        std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
+
+        // Find the smallest eigenvalue (in abs)
+        double c = 1.;
+        for (uint64_t i = 0UL; i < eigenvals.size() ; ++i) {
+            double abs_eig = fabs(utils::bin_to_double(SIZE_C, eigenvals[i]));
+            if (abs_eig < c)
+                c = abs_eig;
+        }
+
+        quint_t<SIZE> qreg;
+        std::array<uint64_t, 1UL << SIZE> res;
+        res.fill(0UL);
+        for (uint64_t step = 0UL; step < nb_shots ; ++step) {
+            reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
+            ++res[measure_and_reset(qreg)];
+        }
+        return res;
+    }
+}
 
 #endif  /* QAT_ */
 

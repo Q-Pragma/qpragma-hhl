@@ -1,3 +1,5 @@
+
+
 #include <iostream>
 
 #include "qpragma/hhl.hpp"
@@ -39,15 +41,16 @@ void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
 int main() {
     const uint64_t SIZE = 2UL;
     const uint64_t SIZE_C = 4UL;
-    PauliTerm<SIZE> term1 { "II", 0. };
-    PauliTerm<SIZE> term2 { "XI", 0.5 };
-    PauliTerm<SIZE> term3 { "IX", 0.25 };
-    std::vector term_vect { term1, term2, term3 };
-    std::array<double, 1 << SIZE> init_array {1., 0., 0., 0};
+    PauliTerm<SIZE> term1 { "IX", 0.5 };
+    PauliTerm<SIZE> term2 {"XI" , 0.25};
+    std::vector term_vect { term1, term2 };
+    std::array<double, 1 << SIZE> init_array {1., 0., 0., 0.};
 
     Observable<SIZE> obs { term_vect };
-    qpragma::quint_t<SIZE> qreg;
 
-    qpragma::hhl::basic_hhl<SIZE, SIZE_C>(qreg, init_array, obs);
+    auto res = qpragma::hhl::test_hhl<SIZE, SIZE_C>(init_array, obs, 100UL);
+    for (uint64_t idx =0 ; idx < (1 << SIZE) ; ++idx) {
+        std::cout << idx << " " << res[idx] << std::endl;
+    }
 }
 
