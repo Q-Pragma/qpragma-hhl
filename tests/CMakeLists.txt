@@ -5,7 +5,7 @@
 # List C++ files
 set(cpp-test-files
         ${TESTS_DIR}/main.cpp
-        # ${TESTS_DIR}/test_hhl.cpp
+        ${TESTS_DIR}/test_hhl.cpp
         ${TESTS_DIR}/test_utils.cpp)
 
 

@@ -1,6 +1,6 @@
 // Unitary test using gtest
 #include <string>
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 #include "qpragma.h"
 #include "qpragma/hhl.hpp"
 
@@ -11,13 +11,14 @@ double ERROR_RATIO = 0.1;
 
 
 TEST(HHL, m1x1_I) {
-    uint64_t SIZE = 1UL;
-    uint64_t SIZE_C = 4UL;
-    uint64_t NB_SHOTS = 100UL;
+    const uint64_t SIZE = 1UL;
+    const uint64_t SIZE_C = 4UL;
+    const uint64_t NB_SHOTS = 100UL;
 
     /* A = I */
-    PauliTerm<SIZE> term1 { "I", 0.5 };
-    Observable<SIZE> obs { term_vect };
+    hhl::observables::PauliTerm<SIZE> term1 { "I", 0.5 };
+    std::vector term_vect { term1 };
+    hhl::observables::Observable<SIZE> obs { term_vect };
 
     // b = |0>
     std::array<double, 1UL << SIZE> init_array {1., 0.};
