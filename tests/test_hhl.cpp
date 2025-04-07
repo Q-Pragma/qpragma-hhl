@@ -11,9 +11,9 @@ double ERROR_RATIO = 0.1;
 
 
 TEST(HHL, m1x1_I) {
-    const uint64_t SIZE = 1UL;
-    const uint64_t SIZE_C = 4UL;
-    const uint64_t NB_SHOTS = 100UL;
+    constexpr uint64_t SIZE = 1UL;
+    constexpr uint64_t SIZE_C = 4UL;
+    constexpr uint64_t NB_SHOTS = 100UL;
 
     /* A = I */
     hhl::observables::PauliTerm<SIZE> term1 { "I", 0.5 };

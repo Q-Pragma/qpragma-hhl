@@ -11,7 +11,7 @@ set(cpp-test-files
 
 # Use Q-Pragma plugin
 add_executable(qpragma-hhl-tests EXCLUDE_FROM_ALL ${cpp-test-files})
-target_link_libraries(qpragma-hhl-tests qpragma qpragma-newlinalg qatnewlinalg gtest)
+target_link_libraries(qpragma-hhl-tests qpragma qpragma-hhl qpragma-newlinalg qatnewlinalg gtest)
 set_target_properties(
     qpragma-hhl-tests
     PROPERTIES
