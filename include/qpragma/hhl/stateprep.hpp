@@ -62,26 +62,30 @@ namespace qpragma::hhl::stateprep {
             double angle = 2. * sign(init_array[1]) * acos(sign(init_array[0]) * init_array[0]);
             (RY(angle))(qreg);
         }
+
         // Multi-qubit system
         else {
             std::vector<double> tree_vect = get_tree_coeff<SIZE>(init_array);
             // First rotation on the first qubit
             double angle = 2 * acos(sqrt(tree_vect[1]));
+
             if (std::abs(angle) > _TOL) {
                 (RY(angle))(qreg[SIZE - 1UL]);
             }
 
             // Iter until the leaves (excluded) are reached --> work only with proba
             uint64_t start_val;
-            double left, right;
+
             for (uint64_t idx = 1 ; idx < SIZE - 1 ; ++idx) {
                 start_val = (1 << (idx + 1)) - 1;
 
                 for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << idx) ; ++ctrl_val) {
-                    left = tree_vect[start_val + 2 * ctrl_val];
-                    right = tree_vect[start_val + 2 * ctrl_val + 1];
+                    double left = tree_vect[start_val + 2 * ctrl_val];
+                    double right = tree_vect[start_val + 2 * ctrl_val + 1];
+
                     if (left + right > _TOL) {
                         angle = 2 * acos(sqrt(left / (left + right)));
+
                         if (std::abs(angle) > _TOL) {
                             #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(SIZE-idx, SIZE-1)) == ctrl_val)
                             (RY(angle))(qreg[SIZE - 1UL - idx]);
@@ -92,13 +96,17 @@ namespace qpragma::hhl::stateprep {
 
             // Last iteration : take into account signs from init_array
             start_val = (1 << SIZE) - 1;
+
             for (uint64_t ctrl_val = 0 ; ctrl_val < (1 << (SIZE-1)) ; ++ctrl_val) {
                 double sign_left = sign(init_array[2 * ctrl_val]);
                 double sign_right = sign(init_array[2 * ctrl_val + 1]);
-                left = tree_vect[start_val + 2 * ctrl_val];
-                right = tree_vect[start_val + 2 * ctrl_val + 1];
+
+                double left = tree_vect[start_val + 2 * ctrl_val];
+                double right = tree_vect[start_val + 2 * ctrl_val + 1];
+
                 if (left + right > _TOL) {
                     angle = 2 * sign_right * acos(sign_left * sqrt(left / (left + right)));
+
                     if (std::abs(angle) > _TOL) {
                         #pragma quantum ctrl (qpragma::as_uint<SIZE>(qreg(1, SIZE -1)) == ctrl_val)
                         (RY(angle))(qreg[0]);
