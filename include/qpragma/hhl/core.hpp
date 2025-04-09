@@ -104,19 +104,16 @@ namespace qpragma::hhl {
     }
 
     /* Reduced version of the AQE */
-    #pragma quantum routine (double c, std::array<double, SIZE_C> means)
+    #pragma quantum routine (double c, std::vector<uint64_t> eigenvals)
     template <uint64_t SIZE_C>
     void reduced_AQE(const quint_t<SIZE_C> & creg, const qbool & anc) {
-        for (uint64_t val_c = 1UL ; val_c < (1 << SIZE_C) ; ++val_c) {
-            // Only on the compatible values with eigenvalues
-            if (is_compatible<SIZE_C>(val_c, means, SIZE_C)) {
-                // Angle of the rotation RY
-                double val_c_d = utils::bin_to_double(SIZE_C, val_c);
-                double theta = utils::sign(val_c_d) * acos(sqrt(1 - c*c / (val_c_d * val_c_d)));
-                // Rotation on the ancilla controlled by the eigenvalue
-                #pragma quantum ctrl (creg == val_c)
-                (RY(theta))(anc);
-            }
+        for (auto val_c : eigenvals) {
+            // Angle of the rotation RY
+            double val_c_d = utils::bin_to_double(SIZE_C, val_c);
+            double theta = utils::sign(val_c_d) * acos(sqrt(1 - c*c / (val_c_d * val_c_d)));
+            // Rotation on the ancilla controlled by the eigenvalue
+            #pragma quantum ctrl (creg == val_c)
+            (RY(theta))(anc);
         }
     }
 
@@ -183,8 +180,6 @@ namespace qpragma::hhl {
                      std::vector<uint64_t> eigenvals,
                      double c,
                      quint_t<SIZE> & qreg) {
-        // Get the means of the bits of the eigenvalues
-        std::array<double, SIZE_C> means = utils::get_means<SIZE_C>(eigenvals);
         
         qbool anc = 0;
         // Post selection on ancilla in 1 state
@@ -199,7 +194,7 @@ namespace qpragma::hhl {
                     (QPE<SIZE, SIZE_C, HAM_SIM>(simu))(qreg, creg);
                 }
         
-                (reduced_AQE<SIZE_C>(c, means))(creg, anc);
+                (reduced_AQE<SIZE_C>(c, eigenvals))(creg, anc);
 
                 // Automatically uncompute QPE
             }
