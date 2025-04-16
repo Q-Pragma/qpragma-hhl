@@ -110,7 +110,7 @@ namespace qpragma::hhl {
         for (auto val_c : eigenvals) {
             // Angle of the rotation RY
             double val_c_d = utils::bin_to_double(SIZE_C, val_c);
-            double theta = utils::sign(val_c_d) * acos(sqrt(1 - c*c / (val_c_d * val_c_d)));
+            double theta = 2 * utils::sign(val_c_d) * acos(sqrt(1 - c*c / (val_c_d * val_c_d)));
             // Rotation on the ancilla controlled by the eigenvalue
             #pragma quantum ctrl (creg == val_c)
             (RY(theta))(anc);

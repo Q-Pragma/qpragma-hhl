@@ -92,7 +92,7 @@ namespace qpragma::hhl::simulation {
     #pragma quantum routine(observables::Observable<SIZE> observable, double eps = 0.1)
     template <uint64_t SIZE>
     void trotterization(const qpragma::array<SIZE> & qreg) {
-        uint64_t n_trotter = 1. / sqrt(eps);
+        uint64_t n_trotter = 2. / sqrt(eps);
 
         observable *= -1. / static_cast<double>(n_trotter);
 
