@@ -6,7 +6,8 @@
 set(cpp-test-files
         ${TESTS_DIR}/main.cpp
         ${TESTS_DIR}/test_hhl.cpp
-        ${TESTS_DIR}/test_utils.cpp)
+        ${TESTS_DIR}/test_utils.cpp
+        ${TESTS_DIR}/test_stateprep.cpp)
 
 
 # Use Q-Pragma plugin
