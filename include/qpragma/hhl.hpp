@@ -59,10 +59,25 @@
         ); \
     }
 
+#define DEFINE_HHL_IMPLEMENTATION_USECASE(name, state_prep_t, simu_t) \
+    template <uint64_t SIZE, uint64_t SIZE_C> \
+    std::array<uint64_t, 1UL << SIZE> name ( \
+        const std::array<double, (1UL << SIZE)> & init, \
+        uint64_t nb_shots = 1UL, \
+        double eps = 0.1 \
+    ) { \
+        return qpragma::hhl::hybrid_hhl_usecase<SIZE, SIZE_C, decltype(state_prep_t{ init }), decltype(simu_t {})>( \
+            init, nb_shots, eps \
+        ); \
+    }
+
+
+
 
 namespace qpragma::hhl {
     DEFINE_HHL_IMPLEMENTATION(basic_hhl, stateprep::kp_tree<SIZE>, simulation::trotterization<SIZE>)
     DEFINE_HHL_IMPLEMENTATION_WITH_SAMPLING(test_hhl, stateprep::kp_tree<SIZE>, simulation::trotterization<SIZE>)
+    DEFINE_HHL_IMPLEMENTATION_USECASE(bcm, stateprep::kp_tree<SIZE>, simulation::hamsim_bcm<SIZE>)
 }
 
 #endif  /* QPRAGMA_HLL_HPP */

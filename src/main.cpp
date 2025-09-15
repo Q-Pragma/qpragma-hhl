@@ -40,15 +40,10 @@ void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
 
 int main() {
     const uint64_t SIZE = 2UL;
-    const uint64_t SIZE_C = 4UL;
-    PauliTerm<SIZE> term1 { "IX", 0.5 };
-    PauliTerm<SIZE> term2 {"XI" , 0.25};
-    std::vector term_vect { term1, term2 };
+    const uint64_t SIZE_C = 6UL;
     std::array<double, 1 << SIZE> init_array {1., 0., 0., 0.};
 
-    Observable<SIZE> obs { term_vect };
-
-    auto res = qpragma::hhl::test_hhl<SIZE, SIZE_C>(init_array, obs, 100UL);
+    auto res = qpragma::hhl::bcm<SIZE, SIZE_C>(init_array, 100UL);
     for (uint64_t idx =0 ; idx < (1 << SIZE) ; ++idx) {
         std::cout << idx << " " << res[idx] << std::endl;
     }

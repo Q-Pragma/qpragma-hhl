@@ -28,7 +28,6 @@
 #include "qpragma/hhl/observables.hpp"
 #include "qpragma/hhl/utils.hpp"
 
-
 namespace qpragma::hhl {
     const uint64_t _NB_SHOTS = 100UL;
 
@@ -258,6 +257,38 @@ namespace qpragma::hhl {
         }
         return res;
     }
+
+    template <uint64_t SIZE, uint64_t SIZE_C, typename STATE_PREP, typename HAM_SIM>
+    std::array<uint64_t, 1UL << SIZE> hybrid_hhl_usecase(
+        const std::array<double, (1UL << SIZE)> & init,
+        uint64_t nb_shots = 1UL,
+        double eps = 0.1
+    ) {
+        // Initialize the state preparation and hamiltonian simulation
+        STATE_PREP state_prep { init };
+        HAM_SIM simu { eps };
+
+        // Hybrid quantum-classical sampling of eigenvalues
+        std::vector<uint64_t> eigenvals = get_eigenvals<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep);
+
+        // Find the smallest eigenvalue (in abs)
+        double c = 1.;
+        for (uint64_t i = 0UL; i < eigenvals.size() ; ++i) {
+            double abs_eig = fabs(utils::bin_to_double(SIZE_C, eigenvals[i]));
+            if (abs_eig < c)
+                c = abs_eig;
+        }
+
+        quint_t<SIZE> qreg;
+        std::array<uint64_t, 1UL << SIZE> res;
+        res.fill(0UL);
+        for (uint64_t step = 0UL; step < nb_shots ; ++step) {
+            reduced_HHL<SIZE, SIZE_C, HAM_SIM, STATE_PREP>(simu, state_prep, eigenvals, c, qreg);
+            ++res[measure_and_reset(qreg)];
+        }
+        return res;
+    }
+
 }
 
 #endif  /* QAT_ */
