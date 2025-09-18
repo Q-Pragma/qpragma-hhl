@@ -40,7 +40,7 @@ void test_state_prep(std::array<double, 1 << SIZE> & init_array) {
 
 int main() {
     const uint64_t SIZE = 2UL;
-    const uint64_t SIZE_C = 6UL;
+    const uint64_t SIZE_C = 5UL;
     std::array<double, 1 << SIZE> init_array {1., 0., 0., 0.};
 
     auto res = qpragma::hhl::bcm<SIZE, SIZE_C>(init_array, 100UL);

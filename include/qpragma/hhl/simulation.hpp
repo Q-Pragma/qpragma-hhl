@@ -103,6 +103,7 @@ namespace qpragma::hhl::simulation {
         }
     }
 
+        //PH(cos(0.25))(anc);
 
 
     /* Hamiltonian simulation on use cases */
@@ -112,13 +113,15 @@ namespace qpragma::hhl::simulation {
     #pragma quantum routine(double eps = 0.1)
     template <uint64_t SIZE>
     void hamsim_bcm(const qpragma::array<SIZE> & qreg) {
-        double b = -.25;
+        double b = -1.5/4.;
+        double a = 1./4.;
 
         qbool anc;
         qpragma::qft<SIZE>(qreg);
         double angle;
+        RZ(-2. * M_PI * a)(anc);
         for (uint64_t idx = 0 ; idx < (1 << SIZE) ; ++idx) {
-            angle = 4. * b * cos( M_PI * idx / (1 << SIZE) );
+            angle = 4 * b * M_PI * cos(2. * M_PI * idx / (1 << SIZE) );
             #pragma quantum ctrl(qpragma::as_uint<SIZE>(qreg) == idx)
             (RZ(angle))(anc);
         }
